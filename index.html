@@ -156,6 +156,10 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .stack .card{position:absolute;left:0;transition:opacity .2s}
 .stack .card.gone{opacity:.4;filter:grayscale(1) brightness(.7)}
 .stack .cnt{position:absolute;right:-6px;top:-6px;background:var(--ink);color:var(--bg);font:700 11px Sora,sans-serif;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:5}
+.discgroup{display:flex;flex-direction:column;gap:6px;min-width:120px;padding-right:14px;border-right:1px solid var(--line)}
+.discgroup:last-child{border-right:0;padding-right:0}
+.disclabel{font-family:Sora,sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#discard{display:flex;gap:14px;flex-wrap:wrap}
 .deckrow{display:flex;gap:16px;align-items:center;color:var(--muted)}
 .deckrow b{color:var(--ink);font-family:"IBM Plex Mono",monospace}
 .log{font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.5;max-height:120px;overflow:auto;color:var(--muted);white-space:pre-wrap}
@@ -349,7 +353,7 @@ function newGame(){
     board:startBoard(), turn:'w',
     castling:{w:{k:true,q:true},b:{k:true,q:true}}, ep:-1,
     hands:{w:deck.splice(0,hand), b:deck.splice(0,hand)},
-    deck, revealed:[], discard:[], initReveal:init,
+    deck, revealed:[], discard:[], discardBy:[], initReveal:init,
     phase:'mulligan', mull:{w:{done:false},b:{done:false}}, mullSel:-1,
     revealEvery:every, moveNo:1,
     rocks:[], infected:{}, spell:null, phased:-1, raged:-1, speedSq:-1, pending:null,
@@ -511,7 +515,7 @@ function doMove(m){
 function cast(idx){
   if(!canAct()) return;
   const type=S.hands[S.turn][idx];
-  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
+  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
   S.pending={type,idx}; S.sel=-1; render();
 }
 function pickTargets(){
@@ -527,7 +531,7 @@ function pickTargets(){
 }
 function resolveTarget(sq){
   snapshot();
-  const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
+  const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
   if(type==='jump'){ S.phased=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
   if(type==='rage'){ S.raged=sq; log(`${NAMES[S.turn]} casts Rage on ${sqName(sq)}.`,true); }
   if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:3}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
@@ -680,7 +684,7 @@ function attachOnline(code,ver){
       online.handSeat=seat; online.seat=seat; online.hand=null;
       if(seat){ const hRef=db.ref('games/'+code+'/hands/'+seat); const cb=hRef.on('value',hs=>{ online.hand=hs.val()||[]; rebuild(); }, e=>onlineNote('Hand read failed: '+fbErr(e),true)); online.handUnsub=()=>hRef.off('value',cb); }
     }
-    online.seat=seat; rebuild(); renderOnline();
+    online.seat=seat; rebuild(); if(S) render(); renderOnline();
   }, e=>onlineNote('Connection error: '+fbErr(e),true));
   const onState=stateRef.on('value',snap=>{ const st=snap.val(); if(!st) return; online.state=st; rebuild(); }, e=>onlineNote('Connection error: '+fbErr(e),true));
   online.unsubs.push(()=>metaRef.off('value',onMeta),()=>stateRef.off('value',onState));
@@ -698,7 +702,7 @@ function rebuild(){
   const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
   const ns=JSON.parse(JSON.stringify(st)); ns.pending=null; ns.sel=-1;
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
-  for(const k of ['rocks','revealed','discard','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
+  for(const k of ['rocks','revealed','discard','discardBy','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
   if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
@@ -891,7 +895,14 @@ function render(){
   else S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } hand.appendChild(c); });
   const rev=document.getElementById('revealed'); rev.innerHTML=''; S.revealed.forEach(t=>rev.appendChild(cardEl(t,'sm')));
   document.getElementById('revN').textContent=S.revealed.length;
-  const disc=document.getElementById('discard'); disc.innerHTML=''; S.discard.forEach(t=>disc.appendChild(cardEl(t,'sm',false)));
+  const disc=document.getElementById('discard'); disc.innerHTML='';
+  { const by=S.discardBy||[]; const mineL=(online&&!spectator)?'Yours':NAMES[me]; const oppL=(online&&!spectator)?'Opponent':NAMES[op];
+    const groups=[[me,mineL],[op,oppL]];
+    groups.forEach(([who,label])=>{ const g=document.createElement('div'); g.className='discgroup'; const l=document.createElement('div'); l.className='disclabel'; l.textContent=label; g.appendChild(l); const row=document.createElement('div'); row.className='cards'; row.style.minHeight='0';
+      S.discard.forEach((t,i)=>{ if((by[i]||null)===who) row.appendChild(cardEl(t,'sm',false)); });
+      if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); }
+      g.appendChild(row); disc.appendChild(g); });
+  }
   document.getElementById('discN').textContent=S.discard.length;
   // tracker: copies the opponent could still hold = 3 - (my hand + revealed + discard)
   const tr=document.getElementById('track'); tr.innerHTML='';
@@ -899,7 +910,7 @@ function render(){
   let total=0;
   for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
-    const left=Math.max(0,3-known); total+=left;
+    const left=Math.max(0,Math.min(3-known,S.hands[op].length)); total+=left;
     const st=document.createElement('div'); st.className='stack';
     for(let i=0;i<3;i++){ const c=cardEl(t,'sm'+(i<3-left?' gone':''),false); c.style.top=(i*26)+'px'; c.style.zIndex=i; st.appendChild(c); }
     const n=document.createElement('div'); n.className='cnt'; n.textContent=left; st.appendChild(n);
