@@ -560,38 +560,58 @@ function mySeat(){ return online?online.seat:S.turn; }
 function inMulligan(){ return S.phase==='mulligan'; }
 function mullSeat(){ if(!inMulligan()) return null; if(online) return online.seat; return !S.mull.w.done?'w':(!S.mull.b.done?'b':null); }
 function applyMulligan(seat,idx){
-  if(idx!=null && idx>=0 && idx<S.hands[seat].length){ const card=S.hands[seat].splice(idx,1)[0]; S.deck.push(card); shuffle(S.deck); S.hands[seat].push(S.deck.shift()); }
-  S.mull[seat]={done:true,swapped:idx!=null&&idx>=0};
+  let card=null;
+  if(idx!=null && idx>=0 && idx<S.hands[seat].length){ card=S.hands[seat].splice(idx,1)[0]; }
+  S.mull[seat]={done:true,swapped:!!card,card};
   S.mullSel=-1;
   finishMulliganIfDone();
 }
 function doMulligan(seat,idx){
   if(!online){ snapshot(); applyMulligan(seat,idx); render(); return; }
   if(online.seat!==seat) return;
-  const hand=S.hands[seat].slice(); const card=(idx!=null&&idx>=0)?hand.splice(idx,1)[0]:null;
+  const swap=idx!=null&&idx>=0;
   const stateRef=firebase.database().ref('games/'+online.code+'/state');
-  let drawn=null;
   stateRef.transaction(st=>{
     if(!st) return;
     st.mull=st.mull||{w:{done:false},b:{done:false}};
     if(st.mull[seat]&&st.mull[seat].done) return;
-    const deck=Array.isArray(st.deck)?st.deck.slice():[];
-    drawn=null;
-    if(card){ deck.push(card); shuffle(deck); drawn=deck.shift(); }
-    st.deck=deck;
-    st.mull[seat]={done:true,swapped:!!card};
-    st.handCount=st.handCount||{w:0,b:0}; st.handCount[seat]=hand.length+(drawn?1:0);
-    if(st.mull.w.done&&st.mull.b.done&&st.phase==='mulligan'){ st.phase='play'; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
+    st.mull[seat]={done:true,swap,swapIdx:swap?idx:-1,returned:!swap,drew:!swap};
+    if(st.mull.w.done&&st.mull.b.done&&st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; const deck=Array.isArray(st.deck)?st.deck.slice():[]; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
     st.ver=(st.ver||0)+1; st.lastBy='mull';
     return st;
-  }).then(res=>{
-    if(!res.committed) return;
-    const newHand=hand.slice(); if(drawn) newHand.push(drawn);
-    return firebase.database().ref('games/'+online.code+'/hands/'+seat).set(newHand);
   }).catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true));
+}
+// runs after every state update while in the opening swap; each client handles only its own seat
+function mulliganStep(){
+  if(!online||!online.seat||S.phase!=='mulligan'||online.mullBusy) return;
+  const me=online.seat, m=S.mull&&S.mull[me]; if(!m||!m.done||!m.swap) return;
+  const opp=S.mull[other(me)]||{};
+  const db=firebase.database(); const stateRef=db.ref('games/'+online.code+'/state'); const handRef=db.ref('games/'+online.code+'/hands/'+me);
+  if(m.done && opp.done && !m.returned){
+    // both decided: put my returned card into the pool
+    const hand=(online.hand||[]).slice(); const idx=Math.min(Math.max(0,m.swapIdx|0),hand.length-1); if(hand.length===0) return;
+    const card=hand.splice(idx,1)[0];
+    online.mullBusy=true;
+    handRef.set(hand).then(()=>stateRef.transaction(st=>{ if(!st) return; st.deck=(Array.isArray(st.deck)?st.deck:[]).concat([card]); st.mull[me].returned=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=hand.length; st.ver=(st.ver||0)+1; st.lastBy='mull'; return st; }))
+      .catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true)).finally(()=>{ online.mullBusy=false; });
+    return;
+  }
+  if(m.returned && opp.returned && !m.drew){
+    // both cards are in the pool: shuffle and draw one
+    let drawn=null; online.mullBusy=true;
+    stateRef.transaction(st=>{ if(!st) return; if(st.mull[me].drew) return; const deck=(Array.isArray(st.deck)?st.deck:[]).slice(); shuffle(deck); drawn=deck.shift()||null; st.deck=deck; st.mull[me].drew=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=(online.hand||[]).length+(drawn?1:0);
+        if(st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
+        st.ver=(st.ver||0)+1; st.lastBy='mull'; return st; })
+      .then(res=>{ if(res.committed&&drawn){ const hand=(online.hand||[]).slice(); hand.push(drawn); return handRef.set(hand); } })
+      .catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true)).finally(()=>{ online.mullBusy=false; });
+  }
 }
 function finishMulliganIfDone(){
   if(S.mull.w.done && S.mull.b.done && S.phase==='mulligan'){
+    // both decided: returned cards go into the pool together, then each swapper draws
+    for(const s of ['w','b']) if(S.mull[s].card){ S.deck.push(S.mull[s].card); }
+    shuffle(S.deck);
+    for(const s of ['w','b']) if(S.mull[s].card){ S.hands[s].push(S.deck.shift()); S.mull[s].card=null; }
     S.phase='play';
     const n=Math.max(0,Math.min(S.initReveal||0,S.deck.length-3));
     S.revealed=S.deck.splice(0,n);
@@ -622,7 +642,8 @@ async function createOnline(){
   const code=makeCode();
   newGame(); const pub=pubState(); pub.ver=1; pub.lastBy=uid;
   const upd={};
-  upd['games/'+code+'/meta']={created:firebase.database.ServerValue.TIMESTAMP,seats:{w:uid,b:null}};
+  const creatorSeat=Math.random()<0.5?'w':'b';
+  upd['games/'+code+'/meta']={created:firebase.database.ServerValue.TIMESTAMP,seats:{w:creatorSeat==='w'?uid:null,b:creatorSeat==='b'?uid:null}};
   upd['games/'+code+'/state']=pub;
   upd['games/'+code+'/hands/w']=S.hands.w.slice();
   upd['games/'+code+'/hands/b']=S.hands.b.slice();
@@ -638,8 +659,8 @@ async function joinOnline(codeIn){
     if(!metaSnap.exists()){ onlineNote('No game with that code.',true); renderOnline(); return; }
     const seats=metaSnap.val().seats||{};
     if(seats.w!==uid && seats.b!==uid){
-      const res=await firebase.database().ref('games/'+code+'/meta/seats/b').transaction(cur=>cur?undefined:uid);
-      if(!res.committed && seats.w!==uid){ /* seat b taken by someone else: spectate */ }
+      const empty=!seats.w?'w':(!seats.b?'b':null);
+      if(empty){ await firebase.database().ref('games/'+code+'/meta/seats/'+empty).transaction(cur=>cur?undefined:uid); }
     }
     attachOnline(code,0);
   }catch(e){ onlineNote('Could not join: '+fbErr(e),true); renderOnline(); }
@@ -687,6 +708,7 @@ function rebuild(){
   S=ns; online.ver=st.ver||0;
   if(S.discard.length>prevDisc && st.lastBy!==uid) castFx(S.discard[S.discard.length-1]);
   online.loaded=true;
+  mulliganStep();
   if(S.needEval && online.seat===S.turn && !S.over){ evaluateTurnStart(); render(); renderOnline(); commit(); return; }
   render(); renderOnline();
 }
