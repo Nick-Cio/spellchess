@@ -117,7 +117,14 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .status .who.w{background:#fff} .status .who.b{background:#111}
 .hint{color:var(--muted)}
 .hint.warn{color:var(--rage);font-weight:600}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.clockrow{display:flex;justify-content:flex-end;min-height:0}
+.clock{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;padding:4px 12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:4px;min-width:96px;text-align:center}
+.clock.run{color:var(--ink);border-color:var(--ink);background:var(--bg)}
+.clock.low{color:var(--rage);border-color:var(--rage)}
+.clock.low.run{animation:clockblink 1s steps(2,start) infinite}
+@keyframes clockblink{to{opacity:.55}}
+#clkBot{margin-left:auto}
 button{font:inherit;font-weight:500;padding:6px 12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;cursor:pointer}
 button:hover{border-color:var(--ink)} button:focus-visible{outline:2px solid var(--speed);outline-offset:2px}
 button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -182,8 +189,10 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
+    <div class="clockrow"><div class="clock" id="clkTop" hidden></div></div>
     <div class="board" id="board"></div>
     <div class="btns">
+      <div class="clock" id="clkBot" hidden></div>
       <button id="undo">Undo</button>
       <button id="resign">Resign</button>
       <button id="newgame" class="primary">New game</button>
@@ -200,6 +209,9 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
         <label for="sHand">Cards dealt to each player</label><input id="sHand" type="number" min="0" max="6" value="3">
         <label for="sInit">Revealed at start</label><input id="sInit" type="number" min="0" max="12" value="2">
         <label for="sEvery">Reveal one every N full moves</label><input id="sEvery" type="number" min="1" max="20" value="4">
+        <label for="sClock">Play with clock</label><input id="sClock" type="checkbox" checked>
+        <label for="sMin">Minutes per side</label><input id="sMin" type="number" min="1" max="180" value="5">
+        <label for="sInc">Increment (seconds)</label><input id="sInc" type="number" min="0" max="60" value="3">
         <label for="sFlip">Flip board for Black</label><input id="sFlip" type="checkbox">
       </div>
     </div>
@@ -348,6 +360,7 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 
 function newGame(){
   const hand=+document.getElementById('sHand').value, init=+document.getElementById('sInit').value, every=+document.getElementById('sEvery').value;
+  const clockOn=document.getElementById('sClock').checked, mins=Math.max(1,+document.getElementById('sMin').value||5), incS=Math.max(0,+document.getElementById('sInc').value||0);
   const deck=shuffle(['jump','rage','speed','earth','parasite'].flatMap(k=>[k,k,k]));
   S={
     board:startBoard(), turn:'w',
@@ -356,6 +369,7 @@ function newGame(){
     deck, revealed:[], discard:[], discardBy:[], initReveal:init,
     phase:'mulligan', mull:{w:{done:false},b:{done:false}}, mullSel:-1,
     revealEvery:every, moveNo:1,
+    clock:clockOn?{on:true,w:mins*60000,b:mins*60000,inc:incS*1000,lastTick:null,running:null}:{on:false},
     rocks:[], infected:{}, spell:null, phased:-1, raged:-1, speedSq:-1, pending:null,
     sel:-1, lastMove:null, over:null, log:[], notice:''
   };
@@ -456,11 +470,14 @@ function allLegal(S){ const out=[]; for(let i=0;i<64;i++){const p=S.board[i]; if
 function inCheck(S){ const k=kingSq(S,S.turn); return k>=0 && attacked(S,k,other(S.turn)); }
 
 /* ---------- turn flow ---------- */
+function clockNow(){ return Date.now()+(window.__serverOffset||0); }
 function endTurn(){
+  if(S.clock&&S.clock.on&&S.clock.running&&S.clock.lastTick){ const t=clockNow(); S.clock[S.clock.running]=Math.max(0,S.clock[S.clock.running]-(t-S.clock.lastTick))+S.clock.inc; S.clock.lastTick=t; }
   // revert this turn's spell effects
   S.phased=-1; S.raged=-1; S.speedSq=-1; S.spell=null; S.pending=null; S.sel=-1; S.casts=0; S.mateEscape=false;
   if(S.turn==='b'){ S.moveNo++; if((S.moveNo-1)%S.revealEvery===0 && S.deck.length>3){ const c=S.deck.shift(); S.revealed.push(c); log(`Deck reveals ${SPELLS[c].name}.`); } }
   S.turn=other(S.turn);
+  if(S.clock&&S.clock.on){ S.clock.running=S.turn; if(!S.clock.lastTick) S.clock.lastTick=clockNow(); }
   // rocks owned by the player now moving expire
   S.rocks=S.rocks.filter(rk=>{ if(rk.owner===S.turn){ const cell=S.board[rk.sq]; S.board[rk.sq]=(cell&&cell.under)?cell.under:null; return false;} return true; });
   // parasite wears off: 3 opponent turns after casting
@@ -555,6 +572,7 @@ let uid=null, fbReady=null;
 function initFirebase(){
   if(typeof firebase==='undefined'){ fbReady=Promise.resolve(false); return; }
   try{ firebase.initializeApp(FB_CONFIG); }catch(e){}
+  try{ firebase.database().ref('.info/serverTimeOffset').on('value',s=>{ window.__serverOffset=s.val()||0; }); }catch(e){}
   fbReady=new Promise(res=>{
     firebase.auth().onAuthStateChanged(u=>{ if(u){ uid=u.uid; res(true); } });
     firebase.auth().signInAnonymously().catch(e=>{ console.error(e); onlineNote('Sign-in failed: '+e.message,true); res(false); });
@@ -580,7 +598,7 @@ function doMulligan(seat,idx){
     st.mull=st.mull||{w:{done:false},b:{done:false}};
     if(st.mull[seat]&&st.mull[seat].done) return;
     st.mull[seat]={done:true,swap,swapIdx:swap?idx:-1,returned:!swap,drew:!swap};
-    if(st.mull.w.done&&st.mull.b.done&&st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; const deck=Array.isArray(st.deck)?st.deck.slice():[]; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
+    if(st.mull.w.done&&st.mull.b.done&&st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; if(st.clock&&st.clock.on){ st.clock.running=st.turn||'w'; st.clock.lastTick=clockNow(); } const deck=Array.isArray(st.deck)?st.deck.slice():[]; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
     st.ver=(st.ver||0)+1; st.lastBy='mull';
     return st;
   }).catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true));
@@ -604,7 +622,7 @@ function mulliganStep(){
     // both cards are in the pool: shuffle and draw one
     let drawn=null; online.mullBusy=true;
     stateRef.transaction(st=>{ if(!st) return; if(st.mull[me].drew) return; const deck=(Array.isArray(st.deck)?st.deck:[]).slice(); shuffle(deck); drawn=deck.shift()||null; st.deck=deck; st.mull[me].drew=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=(online.hand||[]).length+(drawn?1:0);
-        if(st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
+        if(st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; if(st.clock&&st.clock.on){ st.clock.running=st.turn||'w'; st.clock.lastTick=clockNow(); } const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
         st.ver=(st.ver||0)+1; st.lastBy='mull'; return st; })
       .then(res=>{ if(res.committed&&drawn){ const hand=(online.hand||[]).slice(); hand.push(drawn); return handRef.set(hand); } })
       .catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true)).finally(()=>{ online.mullBusy=false; });
@@ -617,6 +635,7 @@ function finishMulliganIfDone(){
     shuffle(S.deck);
     for(const s of ['w','b']) if(S.mull[s].card){ S.hands[s].push(S.deck.shift()); S.mull[s].card=null; }
     S.phase='play';
+    if(S.clock&&S.clock.on){ S.clock.running=S.turn; S.clock.lastTick=clockNow(); }
     const n=Math.max(0,Math.min(S.initReveal||0,S.deck.length-3));
     S.revealed=S.deck.splice(0,n);
   }
@@ -704,6 +723,7 @@ function rebuild(){
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','discardBy','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
+  ns.clock=ns.clock||{on:false}; if(ns.clock.on){ ns.clock.lastTick=ns.clock.lastTick||null; ns.clock.running=ns.clock.running||null; }
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
   if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
   const hc=ns.handCount||{w:0,b:0}; delete ns.handCount;
@@ -802,6 +822,23 @@ function cardEl(type,cls,tip){
   return d;
 }
 let endShownFor=null;
+function fmtClock(ms){ ms=Math.max(0,ms); const s=Math.ceil(ms/1000); const m=Math.floor(s/60), r=s%60; if(ms<10000) return (ms/1000).toFixed(1); return m+':'+String(r).padStart(2,'0'); }
+function clockRemaining(side){ const c=S.clock; let v=c[side]; if(c.running===side && c.lastTick && !S.over && S.phase!=='mulligan') v-=clockNow()-c.lastTick; return v; }
+function renderClocks(){
+  const top=document.getElementById('clkTop'), bot=document.getElementById('clkBot');
+  if(!S||!S.clock||!S.clock.on){ top.hidden=true; bot.hidden=true; return; }
+  const me=(typeof online!=='undefined'&&online&&online.seat)?online.seat:(document.getElementById('sFlip').checked&&S.turn==='b'?'b':'w');
+  const topSide=other(me), botSide=me;
+  for(const [el,side] of [[top,topSide],[bot,botSide]]){
+    const rem=clockRemaining(side); el.hidden=false; el.textContent=fmtClock(rem);
+    el.className='clock'+(S.clock.running===side&&!S.over&&S.phase!=='mulligan'?' run':'')+(rem<30000?' low':'');
+  }
+  if(!S.over && S.phase!=='mulligan' && S.clock.running && clockRemaining(S.clock.running)<=0){
+    S.clock[S.clock.running]=0; S.over={winner:other(S.clock.running),reason:'timeout'}; log(`${NAMES[S.clock.running]} ran out of time.`,true);
+    render(); if(typeof commit==='function') commit();
+  }
+}
+setInterval(()=>{ if(S&&S.clock&&S.clock.on) renderClocks(); },200);
 function showEnd(){
   const fx=document.getElementById('endfx');
   if(!S.over){ fx.hidden=true; endShownFor=null; return; }
@@ -811,7 +848,8 @@ function showEnd(){
   endShownFor=key;
   const t=document.getElementById('endTitle'), sub=document.getElementById('endSub');
   const r=S.over.reason;
-  t.textContent=r==='checkmate'?'Checkmate':(r==='stalemate'?'Stalemate':(r==='resignation'?'Resignation':'Game over'));
+  t.textContent=r==='checkmate'?'Checkmate':(r==='stalemate'?'Stalemate':(r==='resignation'?'Resignation':(r==='timeout'?'Time out':'Game over')));
+  t.className='endtitle'+(r==='checkmate'||r==='timeout'?' mate':'');
   t.className='endtitle'+(r==='checkmate'?' mate':'');
   sub.textContent=S.over.winner?`${NAMES[S.over.winner]} wins`:'Draw';
   fx.hidden=false;
@@ -857,7 +895,7 @@ function render(){
   }
   // status
   const st=document.getElementById('status'), hint=document.getElementById('hint');
-  showEnd();
+  showEnd(); renderClocks();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
     if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
