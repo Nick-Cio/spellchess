@@ -948,7 +948,7 @@ function render(){
   let total=0;
   for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
-    const left=Math.max(0,Math.min(3-known,S.hands[op].length)); total+=left;
+    const left=Math.max(0,3-known); total+=left;
     const st=document.createElement('div'); st.className='stack';
     for(let i=0;i<3;i++){ const c=cardEl(t,'sm'+(i<3-left?' gone':''),false); c.style.top=(i*26)+'px'; c.style.zIndex=i; st.appendChild(c); }
     const n=document.createElement('div'); n.className='cnt'; n.textContent=left; st.appendChild(n);
