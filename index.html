@@ -48,8 +48,8 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .sq.cand:hover .pc{filter:drop-shadow(0 0 8px var(--spell)) drop-shadow(0 0 2px var(--spell))}
 .sq .prev{position:absolute;width:calc(var(--sq)*.28);height:calc(var(--sq)*.28);border-radius:50%;background:var(--spell);opacity:.7;pointer-events:none;z-index:2}
 .sq .prevcap{position:absolute;inset:6%;border:calc(var(--sq)*.07) solid var(--spell);border-radius:50%;opacity:.75;pointer-events:none;z-index:2}
-.sq .rock.ghost{opacity:.45}
-.sq .rock.encase{opacity:.62;z-index:3;inset:8%;border-radius:18% 30% 22% 28%}
+.sq .rock.ghost{opacity:.4}
+.sq .rock.encase{opacity:.78;z-index:3}
 .sq .pc.encased{filter:grayscale(.6) brightness(.85)}
 .sq .flashring{position:absolute;inset:0;border:3px solid var(--spell);border-radius:6px;animation:flash .6s ease-out forwards;pointer-events:none;z-index:3}
 @keyframes flash{0%{transform:scale(1);opacity:1}100%{transform:scale(1.7);opacity:0}}
@@ -61,7 +61,12 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .sq.phased::before{content:"";position:absolute;inset:0;background:rgba(47,158,78,.32)}
 .sq.raged::before{content:"";position:absolute;inset:0;background:rgba(210,58,42,.4)}
 .sq.speed::before{content:"";position:absolute;inset:0;background:rgba(242,197,49,.5)}
-.sq .rock{position:absolute;inset:12%;background:var(--earth);border-radius:22% 40% 30% 38%;box-shadow:inset -6px -6px 0 rgba(0,0,0,.28),inset 4px 4px 0 rgba(255,255,255,.15)}
+.sq .rock{position:absolute;inset:6%;z-index:2;pointer-events:none}
+.sq .rock svg{width:100%;height:100%;shape-rendering:crispEdges;filter:drop-shadow(0 2px 0 rgba(0,0,0,.35))}
+.sq .rock .dust{position:absolute;left:50%;bottom:8%;width:calc(var(--sq)*.09);height:calc(var(--sq)*.09);border-radius:50%;background:#4d301a;opacity:0}
+.sq .rock.rise .dust{animation:dust .55s ease-out forwards}
+.sq .rock.rise .dust:nth-child(2){--dx:-1.4} .sq .rock.rise .dust:nth-child(3){--dx:-.6} .sq .rock.rise .dust:nth-child(4){--dx:.6} .sq .rock.rise .dust:nth-child(5){--dx:1.4}
+@keyframes dust{0%{opacity:0;transform:translate(-50%,0) scale(.6)}25%{opacity:.9}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0)*var(--sq)*.32),calc(var(--sq)*-.28)) scale(1.2)}}
 .sq.infected::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 55%, rgba(0,0,0,.55), rgba(0,0,0,0) 70%);animation:veil 2.4s ease-in-out infinite;animation-delay:var(--ph,0ms);pointer-events:none}
 .sq.infected .pc{animation:throb 2.4s ease-in-out infinite;animation-delay:var(--ph,0ms)}
 .sq.infected .pc.w{-webkit-text-stroke:calc(var(--sq)*.03) #000}
@@ -100,9 +105,11 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 @keyframes ragethrob{0%,100%{filter:drop-shadow(0 0 4px var(--rage)) drop-shadow(0 0 2px var(--rage))}50%{filter:drop-shadow(0 0 12px var(--rage)) drop-shadow(0 0 4px var(--rage));transform:scale(1.06)}}
 .sq.phased .pc{animation:phase 1.4s ease-in-out infinite}
 @keyframes phase{0%,100%{opacity:1;filter:drop-shadow(0 0 4px var(--jump))}50%{opacity:.45;filter:drop-shadow(0 0 14px var(--jump))}}
-.sq .rock.drop{animation:rockdrop .5s cubic-bezier(.2,.9,.3,1.3)}
-@keyframes rockdrop{0%{transform:scale(1.8) translateY(-40%);opacity:0}60%{transform:scale(.95) translateY(0);opacity:1}100%{transform:scale(1)}}
-@media (prefers-reduced-motion: reduce){ #castfx{display:none} .sq.raged .pc,.sq.phased .pc,.sq .rock.drop{animation:none} }
+.sq .rock.rise svg{animation:rockrise .5s cubic-bezier(.2,.9,.3,1.25) both}
+@keyframes rockrise{0%{clip-path:inset(100% 0 0 0);transform:translateY(18%)}70%{clip-path:inset(0 0 0 0);transform:translateY(-4%)}100%{clip-path:inset(0 0 0 0);transform:translateY(0)}}
+.sq.quake{animation:quake .4s ease-out}
+@keyframes quake{0%,100%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-1px)}80%{transform:translate(1px,1px)}}
+@media (prefers-reduced-motion: reduce){ #castfx{display:none} .sq.raged .pc,.sq.phased .pc,.sq .rock.rise svg,.sq .rock.rise .dust,.sq.quake{animation:none} }
 .sq .kingcap{position:absolute;inset:0;border:4px solid var(--rage);pointer-events:none}
 
 .status{font-family:Sora,sans-serif;font-weight:600;font-size:16px}
@@ -293,6 +300,24 @@ earth:[
 "................",
 "................",
 "................"]};
+const ROCK_PIX=[
+"................",
+"....LLLLLLL.....",
+"..LLBBBBBBBLL...",
+".LBBBBBBBBBBBL..",
+".LBBBBDBBBBBBBL.",
+"LBBBBBDBBBBBBBL.",
+"LBBBBBBDBBBBBBBL",
+"LBBBBBBBDDBBBBBL",
+"LBBBBBBBBBDBBBBL",
+"LBBBDBBBBBBBDBBL",
+".LBBBDBBBBBBDBL.",
+".LBBBBBBBBBBBBL.",
+"..DBBBBBBBBBBD..",
+"..DDBBBBBBBBDD..",
+"...DDDDDDDDDD...",
+"................"];
+const ROCK_SVG=(()=>{ const col={L:'#a06e42',B:'#7a4f2b',D:'#4d301a'}; let r=''; ROCK_PIX.forEach((row,y)=>{ for(let x=0;x<16;x++){ const ch=row[x]; if(col[ch]) r+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${col[ch]}"/>`; } }); return `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">${r}</svg>`; })();
 function pixSvg(type,ink){
   const rows=PIX[type]; let r='';
   rows.forEach((row,y)=>{ for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.') continue; r+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${ink}"${ch==='o'?' opacity=".45"':''}/>`; } });
@@ -502,7 +527,7 @@ function pickTargets(){
 }
 function resolveTarget(sq){
   snapshot();
-  const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;},600); }
+  const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
   if(type==='jump'){ S.phased=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
   if(type==='rage'){ S.raged=sq; log(`${NAMES[S.turn]} casts Rage on ${sqName(sq)}.`,true); }
   if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:3}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
@@ -791,11 +816,11 @@ function render(){
     const infRec=infOf(sq); if(infRec && (infRec.by===view || S.over)){ d.classList.add('infected'); d.style.setProperty('--ph',(-(Date.now()%2400))+'ms'); const dots=document.createElement('div'); dots.className='infdots'; for(let k=0;k<infRec.left;k++){ const o=document.createElement('span'); dots.appendChild(o); } d.appendChild(dots); }
     if(S.pending&&S.pending.type==='parasite'&&sq===hoverSq&&targets.includes(sq)) d.classList.add('infected');
     if(flipSq===sq){ d.classList.add('flipanim'); d.style.setProperty('--t0',since(flipT0)); const fr=document.createElement('div'); fr.className='flashring dark'; fr.style.animationDelay=since(flipT0); d.appendChild(fr); }
-    if(S.pending&&S.pending.type==='earth'&&sq===hoverSq&&targets.includes(sq)){ const k=document.createElement('div'); k.className='rock ghost'; d.appendChild(k); }
+    if(S.pending&&S.pending.type==='earth'&&sq===hoverSq&&targets.includes(sq)){ const k=document.createElement('div'); k.className='rock ghost'; k.innerHTML=ROCK_SVG; d.appendChild(k); }
     if(col===0){ const c=document.createElement('span'); c.className='coord r'; c.textContent=r+1; d.appendChild(c); }
     if(row===7){ const c=document.createElement('span'); c.className='coord f'; c.textContent=FILES[f]; d.appendChild(c); }
     const p=S.board[sq];
-    if(p){ if(p.c==='x'){ if(p.under){ const s=document.createElement('span'); s.className='pc '+p.under.c+' encased'; s.textContent=GLYPH.b[p.under.t]+'\uFE0E'; d.appendChild(s); } const k=document.createElement('div'); k.className='rock'+(p.under?' encase':'')+(rockDrop===sq?' drop':''); if(rockDrop===sq) k.style.animationDelay=since(rockT0); d.appendChild(k); }
+    if(p){ if(p.c==='x'){ if(p.under){ const s=document.createElement('span'); s.className='pc '+p.under.c+' encased'; s.textContent=GLYPH.b[p.under.t]+'\uFE0E'; d.appendChild(s); } const k=document.createElement('div'); k.className='rock'+(p.under?' encase':'')+(rockDrop===sq?' rise':''); k.innerHTML=ROCK_SVG+(rockDrop===sq?'<i class="dust"></i><i class="dust"></i><i class="dust"></i><i class="dust"></i>':''); if(rockDrop===sq){ k.querySelector('svg').style.animationDelay=since(rockT0); k.querySelectorAll('.dust').forEach(e=>e.style.animationDelay=since(rockT0)); d.classList.add('quake'); d.style.animationDelay=since(rockT0); } d.appendChild(k); }
       else { const s=document.createElement('span'); s.className='pc '+p.c; s.textContent=GLYPH.b[p.t]+'︎'; d.appendChild(s); }
       if(p.c===S.turn && sq!==S.phased && !S.over && !S.pending && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
     const m=legalMoves.find(m=>m.to===sq);
