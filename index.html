@@ -469,68 +469,114 @@ function resolveTarget(sq){
 }
 
 /* ---------- online (WebRTC via PeerJS) ---------- */
-let online=null; // {code, seat, seats, peer, conn}
+let online=null; // {code, seat, seats, peer, conn, ver}
 function mySeat(){ return online?online.seat:S.turn; }
 function canAct(){ return !online || (online.seat && online.seat===S.turn && online.seats && online.seats.w && online.seats.b); }
+const PEER_PREFIX='spellchess-v1-';
+const ICE={iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turns:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
+]};
+function saveSession(){ try{ if(online) localStorage.setItem('spellchess_session',JSON.stringify({code:online.code,seat:online.seat,ver:online.ver||0,state:S,at:Date.now()})); else localStorage.removeItem('spellchess_session'); }catch(e){} }
 function commit(){
+  if(!online) return;
+  online.ver=(online.ver||0)+1; S.ver=online.ver;
+  saveSession();
+  sendState();
+}
+function sendState(){
   if(!online||!online.conn||!online.conn.open) return;
   const snapS=JSON.parse(JSON.stringify(S)); snapS.pending=null; snapS.sel=-1;
-  try{ online.conn.send({type:'state',state:snapS}); }catch(e){ onlineNote('Send failed: '+e.message,true); }
+  try{ online.conn.send({type:'state',state:snapS,ver:online.ver||0}); }catch(e){}
 }
 function makeCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c=''; for(let i=0;i<5;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
 function onlineNote(t,warn){ const n=document.getElementById('onlineNote'); if(n){ n.textContent=t; n.className='online-note'+(warn?' warn':''); } }
-const PEER_PREFIX='spellchess-v1-';
-function peerErr(e){ const t=e&&e.type; if(t==='peer-unavailable') return 'No game with that code (or the host closed the page).'; if(t==='unavailable-id') return 'That code is in use. Try again.'; if(t==='network'||t==='server-error') return 'Could not reach the signaling server. Check your connection.'; if(t==='browser-incompatible') return 'This browser does not support WebRTC.'; return (e&&e.message)||String(e); }
+function peerErr(e){ const t=e&&e.type; if(t==='peer-unavailable') return 'Opponent not reachable yet. Retrying…'; if(t==='unavailable-id') return 'That code is in use. Try again.'; if(t==='network'||t==='server-error') return 'Could not reach the signaling server. Retrying…'; if(t==='browser-incompatible') return 'This browser does not support WebRTC.'; return (e&&e.message)||String(e); }
+function makePeer(id){ return id?new Peer(id,{debug:0,config:ICE}):new Peer({debug:0,config:ICE}); }
 function createOnline(){
   if(typeof Peer==='undefined'){ onlineNote('Networking library failed to load.',true); return; }
   leaveOnline(true);
-  const code=makeCode();
-  const peer=new Peer(PEER_PREFIX+code,{debug:1});
-  online={code,seat:'w',seats:{w:true,b:false},peer,conn:null};
-  history=[]; newGame(); renderOnline(); onlineNote('Contacting signaling server…');
+  newGame(); hostGame(makeCode(),0);
+}
+function hostGame(code,ver){
+  const peer=makePeer(PEER_PREFIX+code);
+  online={code,seat:'w',seats:{w:true,b:false},peer,conn:null,ver:ver||0};
+  history=[]; renderOnline(); render(); onlineNote('Contacting signaling server…'); saveSession();
   peer.on('open',()=>{ onlineNote('Waiting for your opponent to join with the code.'); });
   peer.on('connection',conn=>{
-    if(online.conn&&online.conn.open){ conn.on('open',()=>{ conn.send({type:'full'}); setTimeout(()=>conn.close(),500); }); return; }
+    if(online.conn&&online.conn.open){ try{ online.conn.close(); }catch(e){} }
     wireConn(conn);
   });
-  peer.on('error',e=>{ onlineNote(peerErr(e),true); if(e.type==='unavailable-id') leaveOnline(); });
-  peer.on('disconnected',()=>{ try{ peer.reconnect(); }catch(e){} });
+  peer.on('error',e=>{ onlineNote(peerErr(e),true); if(e.type==='unavailable-id'){ leaveOnline(); } });
+  peer.on('disconnected',()=>{ setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} },1500); });
 }
 function joinOnline(codeIn){
   if(typeof Peer==='undefined'){ onlineNote('Networking library failed to load.',true); return; }
   const code=(codeIn||'').trim().toUpperCase(); if(code.length<4){ onlineNote('Enter the game code.',true); return; }
   leaveOnline(true);
-  const peer=new Peer({debug:1});
-  online={code,seat:'b',seats:{w:true,b:false},peer,conn:null,loaded:false};
-  history=[]; renderOnline(); onlineNote('Connecting…');
-  peer.on('open',()=>{ const conn=peer.connect(PEER_PREFIX+code,{reliable:true}); wireConn(conn); });
-  peer.on('error',e=>{ onlineNote(peerErr(e),true); if(e.type==='peer-unavailable') leaveOnline(); });
-  peer.on('disconnected',()=>{ try{ peer.reconnect(); }catch(e){} });
+  guestGame(code,0,null);
+}
+function guestGame(code,ver,savedState){
+  const peer=makePeer();
+  online={code,seat:'b',seats:{w:true,b:false},peer,conn:null,ver:ver||0,loaded:!!savedState,tries:0};
+  if(savedState){ S=savedState; }
+  history=[]; renderOnline(); render(); onlineNote('Connecting…'); saveSession();
+  const tryConnect=()=>{ if(!online||online.peer!==peer) return; if(online.conn&&online.conn.open) return; online.tries++; try{ wireConn(peer.connect(PEER_PREFIX+code,{reliable:true})); }catch(e){} };
+  peer.on('open',tryConnect);
+  peer.on('error',e=>{ onlineNote(peerErr(e),true); if(e.type==='peer-unavailable'){ setTimeout(tryConnect,3000); } });
+  peer.on('disconnected',()=>{ setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} },1500); });
+  online.retry=tryConnect;
 }
 function wireConn(conn){
-  online.conn=conn;
+  online.conn=conn; let lastSeen=Date.now();
   conn.on('open',()=>{
-    online.seats={w:true,b:true};
-    if(online.seat==='w'){ conn.send({type:'state',state:JSON.parse(JSON.stringify(S))}); }
+    online.seats={w:true,b:true}; lastSeen=Date.now();
+    conn.send({type:'hello',ver:online.ver||0});
     onlineNote('Connected.'); render(); renderOnline();
+    clearInterval(online.hb); online.hb=setInterval(()=>{
+      if(!online||online.conn!==conn) return clearInterval(online.hb);
+      try{ conn.send({type:'ping',ver:online.ver||0}); }catch(e){}
+      if(Date.now()-lastSeen>15000){ try{ conn.close(); }catch(e){} }
+    },4000);
   });
   conn.on('data',msg=>{
-    if(!msg||typeof msg!=='object') return;
-    if(msg.type==='full'){ onlineNote('That game already has two players.',true); leaveOnline(); return; }
+    if(!msg||typeof msg!=='object') return; lastSeen=Date.now();
+    const theirVer=msg.ver||0, mine=online.ver||0;
+    if(msg.type==='hello'||msg.type==='ping'){
+      if(msg.type==='hello') try{ conn.send({type:'pong',ver:mine}); }catch(e){}
+      if(mine>theirVer) sendState();
+      else if(theirVer>mine) try{ conn.send({type:'need'}); }catch(e){}
+      return;
+    }
+    if(msg.type==='pong'){ if(mine>theirVer) sendState(); else if(theirVer>mine) try{ conn.send({type:'need'}); }catch(e){} return; }
+    if(msg.type==='need'){ sendState(); return; }
     if(msg.type==='state'&&msg.state){
-      const prevDisc=(S&&online.loaded!==false)?S.discard.length:Infinity;
+      if(theirVer<mine) return; // stale
+      const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
       S=JSON.parse(JSON.stringify(msg.state)); S.pending=null; S.sel=-1;
+      online.ver=theirVer;
       if(S.discard.length>prevDisc) castFx(S.discard[S.discard.length-1]);
-      online.loaded=true; render();
+      online.loaded=true; saveSession(); render();
     }
   });
-  conn.on('close',()=>{ if(online){ online.seats={w:online.seat==='w',b:online.seat==='b'}; onlineNote('Opponent disconnected.',true); render(); renderOnline(); } });
+  conn.on('close',()=>{ if(online&&online.conn===conn){ clearInterval(online.hb); online.seats={w:online.seat==='w',b:online.seat==='b'}; onlineNote('Connection lost. Reconnecting…',true); render(); renderOnline(); if(online.retry) setTimeout(online.retry,1500); } });
   conn.on('error',e=>onlineNote('Connection error: '+(e&&e.message||e),true));
 }
 function leaveOnline(silent){
-  if(online){ try{ online.conn&&online.conn.close(); }catch(e){} try{ online.peer&&online.peer.destroy(); }catch(e){} }
-  online=null;
+  if(online){ clearInterval(online.hb); try{ online.conn&&online.conn.close(); }catch(e){} try{ online.peer&&online.peer.destroy(); }catch(e){} }
+  online=null; try{ localStorage.removeItem('spellchess_session'); }catch(e){}
   if(!silent){ renderOnline(); render(); }
+}
+function resumeSession(){
+  let ss=null; try{ ss=JSON.parse(localStorage.getItem('spellchess_session')||'null'); }catch(e){}
+  if(!ss||!ss.code||!ss.state) return false;
+  if(Date.now()-(ss.at||0)>6*3600*1000){ try{ localStorage.removeItem('spellchess_session'); }catch(e){} return false; }
+  S=ss.state; S.pending=null; S.sel=-1;
+  if(ss.seat==='w') hostGame(ss.code,ss.ver||0); else guestGame(ss.code,ss.ver||0,S);
+  onlineNote('Resuming game '+ss.code+'…');
+  return true;
 }
 function renderOnline(){
   const btn=document.getElementById('onlineBtn'); const body=document.getElementById('onlineBody');
@@ -538,13 +584,13 @@ function renderOnline(){
   if(!online){
     body.innerHTML=`<button id="olCreate" class="primary">Create game</button>
       <div class="online-row"><input id="olCode" placeholder="GAME CODE" maxlength="6"><button id="olJoin">Join</button></div>
-      <div class="online-note" id="onlineNote">Create a game and send the code to your opponent. Both of you need this page open at the same time.</div>`;
+      <div class="online-note" id="onlineNote">Create a game and send the code to your opponent. If either of you reloads, the game resumes automatically.</div>`;
     document.getElementById('olCreate').onclick=createOnline;
     document.getElementById('olJoin').onclick=()=>joinOnline(document.getElementById('olCode').value);
     document.getElementById('olCode').onkeydown=e=>{ if(e.key==='Enter') joinOnline(e.target.value); };
   } else {
     const seats=online.seats||{}; const waiting=!(seats.w&&seats.b);
-    body.innerHTML=`<div class="code">${online.code}</div><div>You are ${NAMES[online.seat]}. ${waiting?'Waiting for an opponent.':'Opponent connected.'}</div>
+    body.innerHTML=`<div class="code">${online.code}</div><div>You are ${NAMES[online.seat]}. ${waiting?'Waiting for your opponent.':'Opponent connected.'}</div>
       <div class="online-row"><button id="olLeave">Leave game</button></div><div class="online-note" id="onlineNote"></div>`;
     document.getElementById('olLeave').onclick=()=>leaveOnline();
   }
@@ -701,6 +747,7 @@ document.getElementById('sFlip').onchange=render;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); });
 
 function start(data){
+  if(resumeSession()) return;
   if(data&&data.S){ S=data.S; history=data.history||[]; render(); } else newGame();
 }
 window.claude?.hot?.snapshot?.(()=>({S,history}));
