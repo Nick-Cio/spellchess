@@ -640,6 +640,7 @@ function attachOnline(code,ver){
   online.unsubs.push(()=>metaRef.off('value',onMeta),()=>stateRef.off('value',onState));
   try{ localStorage.setItem('spellchess_game',code); }catch(e){}
   renderOnline(); onlineNote('Connected.');
+  setTimeout(()=>{ document.getElementById('onlineBlock').hidden=true; },900);
   const cRef=db.ref('.info/connected'); const cb=cRef.on('value',s=>{ if(online) onlineNote(s.val()?'Connected.':'Offline. Reconnecting…',!s.val()); }); online.unsubs.push(()=>cRef.off('value',cb));
 }
 function rebuild(){
