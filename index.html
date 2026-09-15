@@ -201,7 +201,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 const SPELLS={
   jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Jump over any piece this turn.'},
   rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.'},
-  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice.'},
+  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.'},
   earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Block an empty square for one turn.'},
   parasite:{name:'Parasite',color:'#141414',ink:'#fff',tip:'Infect a piece. Its captor switches sides.'},
 };
@@ -407,12 +407,15 @@ function safeAfter(T){ const k=kingSq(T,T.turn); return k<0 || !attacked(T,k,oth
 function legal(S,from){
   const p=view(S)(from); if(!p||p.c!==S.turn) return [];
   const speedFirst=S.spell&&S.spell.type==='speed'&&S.spell.stage===0;
+  const speedSecond=S.spell&&S.spell.type==='speed'&&S.spell.stage===1;
+  const noCap=m=>!(view(S)(m.to)||m.ep);
   return gen(S,from).filter(m=>{
+    if(speedSecond && !noCap(m)) return false;
     const T=JSON.parse(JSON.stringify(S)); applyMove(T,m,{noFlip:true});
     if(safeAfter(T)) return true;
     // Speed: the first move may pass through check if some second move of the same piece ends safely
     if(speedFirst && !T.flipped){
-      return gen(T,m.to).some(m2=>{ const T2=JSON.parse(JSON.stringify(T)); applyMove(T2,m2,{noFlip:true}); return safeAfter(T2); });
+      return gen(T,m.to).some(m2=>{ if(view(T)(m2.to)||m2.ep) return false; const T2=JSON.parse(JSON.stringify(T)); applyMove(T2,m2,{noFlip:true}); return safeAfter(T2); });
     }
     return false;
   });
@@ -764,7 +767,7 @@ function render(){
     st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
     if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick an empty square for the rock.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
-    else if(S.speedSq>=0) h='Speed: move the same piece again.';
+    else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
     else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. Now move.`;
     else if(online && online.seats && !(online.seats.w&&online.seats.b)) h='Waiting for an opponent to join with code '+online.code+'.';
