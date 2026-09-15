@@ -49,6 +49,8 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .sq .prev{position:absolute;width:calc(var(--sq)*.28);height:calc(var(--sq)*.28);border-radius:50%;background:var(--spell);opacity:.7;pointer-events:none;z-index:2}
 .sq .prevcap{position:absolute;inset:6%;border:calc(var(--sq)*.07) solid var(--spell);border-radius:50%;opacity:.75;pointer-events:none;z-index:2}
 .sq .rock.ghost{opacity:.45}
+.sq .rock.encase{opacity:.62;z-index:3;inset:8%;border-radius:18% 30% 22% 28%}
+.sq .pc.encased{filter:grayscale(.6) brightness(.85)}
 .sq .flashring{position:absolute;inset:0;border:3px solid var(--spell);border-radius:6px;animation:flash .6s ease-out forwards;pointer-events:none;z-index:3}
 @keyframes flash{0%{transform:scale(1);opacity:1}100%{transform:scale(1.7);opacity:0}}
 .board.pulse{animation:pulse .7s ease-out}
@@ -202,7 +204,7 @@ const SPELLS={
   jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Jump over any piece this turn.'},
   rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.'},
   speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.'},
-  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Block an empty square for one turn.'},
+  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.'},
   parasite:{name:'Parasite',color:'#141414',ink:'#fff',tip:'Infect a piece. Its captor switches sides.'},
 };
 const PIX={
@@ -430,7 +432,7 @@ function endTurn(){
   if(S.turn==='b'){ S.moveNo++; if((S.moveNo-1)%S.revealEvery===0 && S.deck.length>3){ const c=S.deck.shift(); S.revealed.push(c); log(`Deck reveals ${SPELLS[c].name}.`); } }
   S.turn=other(S.turn);
   // rocks owned by the player now moving expire
-  S.rocks=S.rocks.filter(rk=>{ if(rk.owner===S.turn){ S.board[rk.sq]=null; return false;} return true; });
+  S.rocks=S.rocks.filter(rk=>{ if(rk.owner===S.turn){ const cell=S.board[rk.sq]; S.board[rk.sq]=(cell&&cell.under)?cell.under:null; return false;} return true; });
   // parasite wears off: 3 opponent turns after casting
   for(const k of Object.keys(S.infected||{})){ const r=S.infected[k]; const rec=typeof r==='string'?{by:r,left:3}:r; if(rec.by===S.turn){ rec.left--; if(rec.left<=0) delete S.infected[k]; else S.infected[k]=rec; } }
   S.notice='';
@@ -454,7 +456,7 @@ function spellCanEscape(){
     if(t==='speed'){ const T=JSON.parse(base); T.spell={type:'speed',stage:0}; if(ok(T)) return true; }
     if(t==='rage'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c===S.turn&&p.t!=='p'){ const T=JSON.parse(base); T.raged=i; if(ok(T)) return true; } } }
     if(t==='jump'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c!=='x'&&p.t!=='k'){ const T=JSON.parse(base); T.phased=i; if(ok(T)) return true; } } }
-    if(t==='earth'){ for(let i=0;i<64;i++){ if(!S.board[i]){ const T=JSON.parse(base); T.board[i]={c:'x',t:'rock'}; if(ok(T)) return true; } } }
+    if(t==='earth'){ for(let i=0;i<64;i++){ const q=S.board[i]; if(!q || (q.c!=='x' && q.t!=='k')){ const T=JSON.parse(base); T.board[i]={c:'x',t:'rock',under:q||null}; if(ok(T)) return true; } } }
   }
   return false;
 }
@@ -492,7 +494,7 @@ function pickTargets(){
   for(let i=0;i<64;i++){ const p=S.board[i];
     if(t==='jump' && p && p.c!=='x' && p.t!=='k') out.push(i);
     if(t==='rage' && p && p.c===S.turn && p.t!=='p') out.push(i);
-    if(t==='earth' && !p) out.push(i);
+    if(t==='earth' && (!p || (p.c!=='x' && p.t!=='k'))) out.push(i);
     if(t==='parasite' && p && p.c!=='x' && p.t!=='k') out.push(i);
   }
   return out;
@@ -503,7 +505,7 @@ function resolveTarget(sq){
   if(type==='jump'){ S.phased=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
   if(type==='rage'){ S.raged=sq; log(`${NAMES[S.turn]} casts Rage on ${sqName(sq)}.`,true); }
   if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:3}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
-  if(type==='earth'){ S.board[sq]={c:'x',t:'rock'}; S.rocks.push({sq,owner:S.turn}); log(`${NAMES[S.turn]} casts Earth on ${sqName(sq)}.`,true); }
+  if(type==='earth'){ const q=S.board[sq]; S.board[sq]={c:'x',t:'rock',under:q||null}; S.rocks.push({sq,owner:S.turn}); log(`${NAMES[S.turn]} casts Earth on ${sqName(sq)}.`,true); }
   flashSq=sq; flashT0=Date.now(); setTimeout(()=>{ if(flashSq===sq){ flashSq=-1; render(); } },650);
   afterCast(); render(); commit();
 }
@@ -536,7 +538,7 @@ function fbErr(e){ const m=(e&&e.message)||String(e); if(/permission/i.test(m)) 
 function pubState(){
   const pub=JSON.parse(JSON.stringify(S)); pub.pending=null; pub.sel=-1;
   pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; delete pub.hands;
-  pub.board=S.board.map(q=>q?(q.c==='x'?'xx':q.c+q.t):'..').join('');
+  pub.board=S.board.map(q=>q?(q.c==='x'?(q.under?q.under.c.toUpperCase()+q.under.t:'xx'):q.c+q.t):'..').join('');
   return pub;
 }
 function commit(opts){
@@ -607,7 +609,7 @@ function rebuild(){
   if(!fresh){ return; }
   const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
   const ns=JSON.parse(JSON.stringify(st)); ns.pending=null; ns.sel=-1;
-  if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:{c:t[0],t:t[1]})); } }
+  if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
   if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
@@ -750,7 +752,7 @@ function render(){
     if(col===0){ const c=document.createElement('span'); c.className='coord r'; c.textContent=r+1; d.appendChild(c); }
     if(row===7){ const c=document.createElement('span'); c.className='coord f'; c.textContent=FILES[f]; d.appendChild(c); }
     const p=S.board[sq];
-    if(p){ if(p.c==='x'){ const k=document.createElement('div'); k.className='rock'+(rockDrop===sq?' drop':''); if(rockDrop===sq) k.style.animationDelay=since(rockT0); d.appendChild(k); }
+    if(p){ if(p.c==='x'){ if(p.under){ const s=document.createElement('span'); s.className='pc '+p.under.c+' encased'; s.textContent=GLYPH.b[p.under.t]+'\uFE0E'; d.appendChild(s); } const k=document.createElement('div'); k.className='rock'+(p.under?' encase':'')+(rockDrop===sq?' drop':''); if(rockDrop===sq) k.style.animationDelay=since(rockT0); d.appendChild(k); }
       else { const s=document.createElement('span'); s.className='pc '+p.c; s.textContent=GLYPH.b[p.t]+'︎'; d.appendChild(s); }
       if(p.c===S.turn && sq!==S.phased && !S.over && !S.pending && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
     const m=legalMoves.find(m=>m.to===sq);
@@ -766,7 +768,7 @@ function render(){
   else {
     st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
-    if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick an empty square for the rock.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
+    if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
     else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
     else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. Now move.`;
