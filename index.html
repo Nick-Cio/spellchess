@@ -319,12 +319,12 @@ function snapshot(){history.push(JSON.stringify(S)); if(history.length>200) hist
 /* ---------- move generation ---------- */
 function view(S){return sq=>sq===S.phased?null:S.board[sq];}
 function inb(f,r){return f>=0&&f<8&&r>=0&&r<8;}
-function gen(S,from,noCastle){
+function gen(S,from,atk){ const noCastle=!!atk;
   const v=view(S); const p=v(from); if(!p) return [];
   const c=p.c, t=(S.raged===from)?'q':p.t;
   const f=from%8, r=Math.floor(from/8); const out=[];
   const push=(to,x)=>out.push(Object.assign({from,to},x||{}));
-  const landable=to=>{ if(to===S.phased) return false; const q=v(to); return !q||(q.c!==c&&q.c!=='x'); };
+  const landable=to=>{ if(to===S.phased) return false; const q=v(to); return !q||(q.c!==c&&q.c!=='x'&&(q.t!=='k'||atk)); };
   const passable=to=>!v(to);
   const slide=(dirs)=>{ for(const [df,dr] of dirs){ let ff=f+df, rr=r+dr; while(inb(ff,rr)){ const to=rr*8+ff; if(landable(to)) push(to); if(!passable(to)) break; ff+=df; rr+=dr; } } };
   const ROOK=[[1,0],[-1,0],[0,1],[0,-1]], BISH=[[1,1],[1,-1],[-1,1],[-1,-1]];
@@ -335,7 +335,7 @@ function gen(S,from,noCastle){
       const two=(r+2*d)*8+f; if(r===start && two!==S.phased && !v(two)) push(two,{dbl:true}); }
     else if(inb(f,r+d) && one===S.phased){ const two=(r+2*d)*8+f; if(r===start && !v(two)) push(two,{dbl:true}); }
     for(const df of [-1,1]){ if(!inb(f+df,r+d)) continue; const to=(r+d)*8+f+df; const q=v(to);
-      if(to!==S.phased && q && q.c!==c && q.c!=='x') push(to,{promo:r+d===last});
+      if(to!==S.phased && q && q.c!==c && q.c!=='x' && (q.t!=='k'||atk)) push(to,{promo:r+d===last});
       else if(to===S.ep && !q) push(to,{ep:true}); }
   } else if(t==='n'){
     for(const [df,dr] of [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]) if(inb(f+df,r+dr)){const to=(r+dr)*8+f+df; if(landable(to)) push(to);}
@@ -384,12 +384,18 @@ function applyMove(S,m,opt){
   if(S.raged===m.from) S.raged=m.to;
   return cap;
 }
+function safeAfter(T){ const k=kingSq(T,T.turn); return k<0 || !attacked(T,k,other(T.turn)); }
 function legal(S,from){
   const p=view(S)(from); if(!p||p.c!==S.turn) return [];
+  const speedFirst=S.spell&&S.spell.type==='speed'&&S.spell.stage===0;
   return gen(S,from).filter(m=>{
-    const T=JSON.parse(JSON.stringify(S)); const cap=applyMove(T,m,{noFlip:true});
-    if(cap&&cap.t==='k') return true;
-    const k=kingSq(T,S.turn); return k<0 || !attacked(T,k,other(S.turn));
+    const T=JSON.parse(JSON.stringify(S)); applyMove(T,m,{noFlip:true});
+    if(safeAfter(T)) return true;
+    // Speed: the first move may pass through check if some second move of the same piece ends safely
+    if(speedFirst && !T.flipped){
+      return gen(T,m.to).some(m2=>{ const T2=JSON.parse(JSON.stringify(T)); applyMove(T2,m2,{noFlip:true}); return safeAfter(T2); });
+    }
+    return false;
   });
 }
 function allLegal(S){ const out=[]; for(let i=0;i<64;i++){const p=S.board[i]; if(p&&p.c===S.turn&&i!==S.phased) out.push(...legal(S,i));} return out; }
@@ -427,7 +433,6 @@ function doMove(m){
   S.lastMove=[m.from,m.to];
   const gl=GLYPH[p.c][p.t];
   log(`${S.moveNo}${S.turn==='w'?'.':'...'} ${gl} ${sqName(m.from)}${cap?'x':'-'}${sqName(m.to)}${m.castle?' castles':''}${m.promo?'=Q':''}`, true);
-  if(cap&&cap.t==='k'){ S.over={winner:S.turn,reason:'king captured'}; log(`King captured. ${NAMES[S.turn]} wins.`,true); S.sel=-1; render(); commit(); return; }
   if(S.flipped){ log(`${sqName(m.to)} switches sides.`,true); flipSq=m.to; flipT0=Date.now(); setTimeout(()=>{ if(flipSq===m.to){ flipSq=-1; render(); } },900); }
   if(S.spell&&S.spell.type==='speed'&&S.spell.stage===0&&!S.flipped){
     S.spell.stage=1; S.speedSq=m.to; S.sel=m.to;
@@ -632,7 +637,7 @@ function render(){
       else { const s=document.createElement('span'); s.className='pc '+p.c; s.textContent=GLYPH.b[p.t]+'︎'; d.appendChild(s); }
       if(p.c===S.turn && sq!==S.phased && !S.over && !S.pending && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
     const m=legalMoves.find(m=>m.to===sq);
-    if(m){ d.classList.add('tgt'); const o=document.createElement('div'); const capK=S.board[sq]&&S.board[sq].t==='k'; o.className=capK?'kingcap':(S.board[sq]||m.ep)?'ring':'dot'; d.appendChild(o); }
+    if(m){ d.classList.add('tgt'); const o=document.createElement('div'); o.className=(S.board[sq]||m.ep)?'ring':'dot'; d.appendChild(o); }
     d.onclick=()=>clickSquare(sq);
     if(S.pending){ d.onmouseenter=()=>{ if(hoverSq!==sq){ hoverSq=sq; render(); } }; }
     board.appendChild(d);
