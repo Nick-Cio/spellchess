@@ -324,7 +324,8 @@ function newGame(){
     board:startBoard(), turn:'w',
     castling:{w:{k:true,q:true},b:{k:true,q:true}}, ep:-1,
     hands:{w:deck.splice(0,hand), b:deck.splice(0,hand)},
-    deck, revealed:deck.splice(0,Math.max(0,Math.min(init,deck.length-3))), discard:[],
+    deck, revealed:[], discard:[], initReveal:init,
+    phase:'mulligan', mull:{w:{done:false},b:{done:false}}, mullSel:-1,
     revealEvery:every, moveNo:1,
     rocks:[], infected:{}, spell:null, phased:-1, raged:-1, speedSq:-1, pending:null,
     sel:-1, lastMove:null, over:null, log:[], notice:''
@@ -531,7 +532,47 @@ function initFirebase(){
   });
 }
 function mySeat(){ return online?online.seat:S.turn; }
-function canAct(){ return !online || (online.seat && online.seat===S.turn && online.seats && online.seats.w && online.seats.b); }
+function inMulligan(){ return S.phase==='mulligan'; }
+function mullSeat(){ if(!inMulligan()) return null; if(online) return online.seat; return !S.mull.w.done?'w':(!S.mull.b.done?'b':null); }
+function applyMulligan(seat,idx){
+  if(idx!=null && idx>=0 && idx<S.hands[seat].length){ const card=S.hands[seat].splice(idx,1)[0]; S.deck.push(card); shuffle(S.deck); S.hands[seat].push(S.deck.shift()); }
+  S.mull[seat]={done:true,swapped:idx!=null&&idx>=0};
+  S.mullSel=-1;
+  finishMulliganIfDone();
+}
+function doMulligan(seat,idx){
+  if(!online){ snapshot(); applyMulligan(seat,idx); render(); return; }
+  if(online.seat!==seat) return;
+  const hand=S.hands[seat].slice(); const card=(idx!=null&&idx>=0)?hand.splice(idx,1)[0]:null;
+  const stateRef=firebase.database().ref('games/'+online.code+'/state');
+  let drawn=null;
+  stateRef.transaction(st=>{
+    if(!st) return;
+    st.mull=st.mull||{w:{done:false},b:{done:false}};
+    if(st.mull[seat]&&st.mull[seat].done) return;
+    const deck=Array.isArray(st.deck)?st.deck.slice():[];
+    drawn=null;
+    if(card){ deck.push(card); shuffle(deck); drawn=deck.shift(); }
+    st.deck=deck;
+    st.mull[seat]={done:true,swapped:!!card};
+    st.handCount=st.handCount||{w:0,b:0}; st.handCount[seat]=hand.length+(drawn?1:0);
+    if(st.mull.w.done&&st.mull.b.done&&st.phase==='mulligan'){ st.phase='play'; const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
+    st.ver=(st.ver||0)+1; st.lastBy='mull';
+    return st;
+  }).then(res=>{
+    if(!res.committed) return;
+    const newHand=hand.slice(); if(drawn) newHand.push(drawn);
+    return firebase.database().ref('games/'+online.code+'/hands/'+seat).set(newHand);
+  }).catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true));
+}
+function finishMulliganIfDone(){
+  if(S.mull.w.done && S.mull.b.done && S.phase==='mulligan'){
+    S.phase='play';
+    const n=Math.max(0,Math.min(S.initReveal||0,S.deck.length-3));
+    S.revealed=S.deck.splice(0,n);
+  }
+}
+function canAct(){ if(inMulligan()) return false; return !online || (online.seat && online.seat===S.turn && online.seats && online.seats.w && online.seats.b); }
 function makeCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c=''; for(let i=0;i<5;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
 function onlineNote(t,warn){ const n=document.getElementById('onlineNote'); if(n){ n.textContent=t; n.className='online-note'+(warn?' warn':''); } }
 function fbErr(e){ const m=(e&&e.message)||String(e); if(/permission/i.test(m)) return 'Permission denied. The database rules may not be set up yet.'; return m; }
@@ -611,6 +652,7 @@ function rebuild(){
   const ns=JSON.parse(JSON.stringify(st)); ns.pending=null; ns.sel=-1;
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
+  ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
   if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
   const hc=ns.handCount||{w:0,b:0}; delete ns.handCount;
@@ -725,7 +767,7 @@ function showEnd(){
 }
 function render(){
   if(!S.pending) hoverSq=-1;
-  const view=mySeat()||S.turn;
+  const view=(inMulligan()&&!online)?(mullSeat()||S.turn):(mySeat()||S.turn);
   const flip=online?(online.seat==='b'):(document.getElementById('sFlip').checked && S.turn==='b');
   const board=document.getElementById('board'); board.innerHTML='';
   const legalMoves=(S.sel>=0&&!S.pending)?legal(S,S.sel):[];
@@ -766,9 +808,11 @@ function render(){
   showEnd();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
-    st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
+    if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
+    else st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
-    if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
+    if(inMulligan()){ const ms=mullSeat(); h=(ms&&!S.mull[ms].done)?'Swap one spell for a random one from the deck, or keep your hand.':'Waiting for the other player to choose.'; }
+    else if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
     else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
     else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. Now move.`;
@@ -785,6 +829,17 @@ function render(){
   const hand=document.getElementById('hand'); hand.innerHTML='';
   const canCast=!S.over && !S.pending && canAct() && !S.spell && S.speedSq<0;
   if(spectator){ const n=document.createElement('div'); n.className='online-note'; n.textContent='Spectating. Hands are hidden.'; hand.appendChild(n); }
+  else if(inMulligan()){
+    const ms=mullSeat(); const mine=ms===me && !S.mull[me].done;
+    S.hands[me].forEach((t,i)=>{ const c=cardEl(t, mine?(S.mullSel===i?'armed':'playable'):'dim'); if(mine) c.onclick=()=>{ S.mullSel=(S.mullSel===i)?-1:i; render(); }; hand.appendChild(c); });
+    const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
+    if(mine){
+      const bSwap=document.createElement('button'); bSwap.className='primary'; bSwap.textContent=S.mullSel>=0?'Swap selected':'Select a card to swap'; bSwap.disabled=S.mullSel<0; bSwap.onclick=()=>doMulligan(me,S.mullSel);
+      const bKeep=document.createElement('button'); bKeep.textContent='Keep hand'; bKeep.onclick=()=>doMulligan(me,-1);
+      row.appendChild(bSwap); row.appendChild(bKeep);
+    } else { const n=document.createElement('div'); n.className='online-note'; n.textContent=(S.mull[me]&&S.mull[me].done)?'Hand locked in.':''; row.appendChild(n); }
+    hand.appendChild(row);
+  }
   else S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } hand.appendChild(c); });
   const rev=document.getElementById('revealed'); rev.innerHTML=''; S.revealed.forEach(t=>rev.appendChild(cardEl(t,'sm')));
   document.getElementById('revN').textContent=S.revealed.length;

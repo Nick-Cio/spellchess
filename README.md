@@ -8,6 +8,7 @@ Chess, plus a deck of 15 spell cards. Play: https://nick-cio.github.io/spellches
 - Each player is dealt 3 cards, kept secret.
 - 2 cards are flipped face up from the deck at the start, and 1 more every 4 full moves, but the last 3 cards of the deck are never revealed. Revealed cards are public information only; nobody gets them.
 - Used cards go face up on the discard pile.
+- **Opening swap:** before the first move, each player may secretly swap one card from their hand for a random one from the deck (the swapped card is shuffled back in). Both choose at the same time; the initial reveal happens after.
 
 ## Your turn
 1. Optionally cast **one** spell from your hand.
