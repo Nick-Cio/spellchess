@@ -145,7 +145,9 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 @media (max-width:900px){ body{overflow:auto;height:auto} html,body{height:auto} .wrap{flex-wrap:wrap} :root{--sq:calc(min(92vw,100vh - 200px)/8)} .side{max-height:none;overflow:visible;width:100%} }
 @media (prefers-reduced-motion: reduce){ .card{transition:none} }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -468,130 +470,137 @@ function resolveTarget(sq){
   afterCast(); render(); commit();
 }
 
-/* ---------- online (WebRTC via PeerJS) ---------- */
-let online=null; // {code, seat, seats, peer, conn, ver}
+/* ---------- online (Firebase Realtime Database) ---------- */
+const FB_CONFIG={
+  apiKey:"AIzaSyC0EJ8uNCzQPEfws-uU6LfpuG-wcCBm0gU",
+  authDomain:"spellchess-d99f9.firebaseapp.com",
+  databaseURL:"https://spellchess-d99f9-default-rtdb.firebaseio.com",
+  projectId:"spellchess-d99f9",
+  storageBucket:"spellchess-d99f9.firebasestorage.app",
+  messagingSenderId:"474533200392",
+  appId:"1:474533200392:web:139e2c513f0649022cc7bd"
+};
+let online=null; // {code, seat, seats, ver, refs, unsubs, meta, state, hand}
+let uid=null, fbReady=null;
+function initFirebase(){
+  if(typeof firebase==='undefined'){ fbReady=Promise.resolve(false); return; }
+  try{ firebase.initializeApp(FB_CONFIG); }catch(e){}
+  fbReady=new Promise(res=>{
+    firebase.auth().onAuthStateChanged(u=>{ if(u){ uid=u.uid; res(true); } });
+    firebase.auth().signInAnonymously().catch(e=>{ console.error(e); onlineNote('Sign-in failed: '+e.message,true); res(false); });
+  });
+}
 function mySeat(){ return online?online.seat:S.turn; }
 function canAct(){ return !online || (online.seat && online.seat===S.turn && online.seats && online.seats.w && online.seats.b); }
-const PEER_PREFIX='spellchess-v1-';
-const ICE={iceServers:[
-  {urls:'stun:stun.l.google.com:19302'},
-  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-  {urls:'turns:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
-]};
-function saveSession(){ try{ if(online) localStorage.setItem('spellchess_session',JSON.stringify({code:online.code,seat:online.seat,ver:online.ver||0,state:S,at:Date.now()})); else localStorage.removeItem('spellchess_session'); }catch(e){} }
-function commit(){
-  if(!online) return;
-  online.ver=(online.ver||0)+1; S.ver=online.ver;
-  saveSession();
-  sendState();
-}
-function sendState(){
-  if(!online||!online.conn||!online.conn.open) return;
-  const snapS=JSON.parse(JSON.stringify(S)); snapS.pending=null; snapS.sel=-1;
-  try{ online.conn.send({type:'state',state:snapS,ver:online.ver||0}); }catch(e){}
-}
 function makeCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c=''; for(let i=0;i<5;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
 function onlineNote(t,warn){ const n=document.getElementById('onlineNote'); if(n){ n.textContent=t; n.className='online-note'+(warn?' warn':''); } }
-function peerErr(e){ const t=e&&e.type; if(t==='peer-unavailable') return 'Opponent not reachable yet. Retrying…'; if(t==='unavailable-id') return 'That code is in use. Try again.'; if(t==='network'||t==='server-error') return 'Could not reach the signaling server. Retrying…'; if(t==='browser-incompatible') return 'This browser does not support WebRTC.'; return (e&&e.message)||String(e); }
-function makePeer(id){ return id?new Peer(id,{debug:0,config:ICE}):new Peer({debug:0,config:ICE}); }
-function createOnline(){
-  if(typeof Peer==='undefined'){ onlineNote('Networking library failed to load.',true); return; }
+function fbErr(e){ const m=(e&&e.message)||String(e); if(/permission/i.test(m)) return 'Permission denied. The database rules may not be set up yet.'; return m; }
+function pubState(){
+  const pub=JSON.parse(JSON.stringify(S)); pub.pending=null; pub.sel=-1;
+  pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; delete pub.hands;
+  pub.board=S.board.map(q=>q?(q.c==='x'?'xx':q.c+q.t):'..').join('');
+  return pub;
+}
+function commit(opts){
+  if(!online) return;
+  online.ver=(online.ver||0)+1;
+  const pub=pubState(); pub.ver=online.ver; pub.lastBy=uid;
+  const upd={}; upd['games/'+online.code+'/state']=pub;
+  if(online.seat) upd['games/'+online.code+'/hands/'+online.seat]=S.hands[online.seat].slice();
+  if(opts&&opts.bothHands){ upd['games/'+online.code+'/hands/w']=S.hands.w.slice(); upd['games/'+online.code+'/hands/b']=S.hands.b.slice(); }
+  firebase.database().ref().update(upd).catch(e=>onlineNote('Sync failed: '+fbErr(e),true));
+}
+async function createOnline(){
+  if(!(await fbReady)){ onlineNote('Online play is unavailable (could not sign in).',true); return; }
   leaveOnline(true);
-  newGame(); hostGame(makeCode(),0);
+  const code=makeCode();
+  newGame(); const pub=pubState(); pub.ver=1; pub.lastBy=uid;
+  const upd={};
+  upd['games/'+code+'/meta']={created:firebase.database.ServerValue.TIMESTAMP,seats:{w:uid,b:null}};
+  upd['games/'+code+'/state']=pub;
+  upd['games/'+code+'/hands/w']=S.hands.w.slice();
+  upd['games/'+code+'/hands/b']=S.hands.b.slice();
+  try{ await firebase.database().ref().update(upd); attachOnline(code,1); }
+  catch(e){ onlineNote('Could not create game: '+fbErr(e),true); }
 }
-function hostGame(code,ver){
-  const peer=makePeer(PEER_PREFIX+code);
-  online={code,seat:'w',seats:{w:true,b:false},peer,conn:null,ver:ver||0};
-  history=[]; renderOnline(); render(); onlineNote('Contacting signaling server…'); saveSession();
-  peer.on('open',()=>{ onlineNote('Waiting for your opponent to join with the code.'); });
-  peer.on('connection',conn=>{
-    if(online.conn&&online.conn.open){ try{ online.conn.close(); }catch(e){} }
-    wireConn(conn);
-  });
-  peer.on('error',e=>{ onlineNote(peerErr(e),true); if(e.type==='unavailable-id'){ leaveOnline(); } });
-  peer.on('disconnected',()=>{ setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} },1500); });
-}
-function joinOnline(codeIn){
-  if(typeof Peer==='undefined'){ onlineNote('Networking library failed to load.',true); return; }
+async function joinOnline(codeIn){
+  if(!(await fbReady)){ onlineNote('Online play is unavailable (could not sign in).',true); return; }
   const code=(codeIn||'').trim().toUpperCase(); if(code.length<4){ onlineNote('Enter the game code.',true); return; }
   leaveOnline(true);
-  guestGame(code,0,null);
-}
-function guestGame(code,ver,savedState){
-  const peer=makePeer();
-  online={code,seat:'b',seats:{w:true,b:false},peer,conn:null,ver:ver||0,loaded:!!savedState,tries:0};
-  if(savedState){ S=savedState; }
-  history=[]; renderOnline(); render(); onlineNote('Connecting…'); saveSession();
-  const tryConnect=()=>{ if(!online||online.peer!==peer) return; if(online.conn&&online.conn.open) return; online.tries++; try{ wireConn(peer.connect(PEER_PREFIX+code,{reliable:true})); }catch(e){} };
-  peer.on('open',tryConnect);
-  peer.on('error',e=>{ onlineNote(peerErr(e),true); if(e.type==='peer-unavailable'){ setTimeout(tryConnect,3000); } });
-  peer.on('disconnected',()=>{ setTimeout(()=>{ try{ peer.reconnect(); }catch(e){} },1500); });
-  online.retry=tryConnect;
-}
-function wireConn(conn){
-  online.conn=conn; let lastSeen=Date.now();
-  conn.on('open',()=>{
-    online.seats={w:true,b:true}; lastSeen=Date.now();
-    conn.send({type:'hello',ver:online.ver||0});
-    onlineNote('Connected.'); render(); renderOnline();
-    clearInterval(online.hb); online.hb=setInterval(()=>{
-      if(!online||online.conn!==conn) return clearInterval(online.hb);
-      try{ conn.send({type:'ping',ver:online.ver||0}); }catch(e){}
-      if(Date.now()-lastSeen>15000){ try{ conn.close(); }catch(e){} }
-    },4000);
-  });
-  conn.on('data',msg=>{
-    if(!msg||typeof msg!=='object') return; lastSeen=Date.now();
-    const theirVer=msg.ver||0, mine=online.ver||0;
-    if(msg.type==='hello'||msg.type==='ping'){
-      if(msg.type==='hello') try{ conn.send({type:'pong',ver:mine}); }catch(e){}
-      if(mine>theirVer) sendState();
-      else if(theirVer>mine) try{ conn.send({type:'need'}); }catch(e){}
-      return;
+  try{
+    const metaSnap=await firebase.database().ref('games/'+code+'/meta').get();
+    if(!metaSnap.exists()){ onlineNote('No game with that code.',true); renderOnline(); return; }
+    const seats=metaSnap.val().seats||{};
+    if(seats.w!==uid && seats.b!==uid){
+      const res=await firebase.database().ref('games/'+code+'/meta/seats/b').transaction(cur=>cur?undefined:uid);
+      if(!res.committed && seats.w!==uid){ /* seat b taken by someone else: spectate */ }
     }
-    if(msg.type==='pong'){ if(mine>theirVer) sendState(); else if(theirVer>mine) try{ conn.send({type:'need'}); }catch(e){} return; }
-    if(msg.type==='need'){ sendState(); return; }
-    if(msg.type==='state'&&msg.state){
-      if(theirVer<mine) return; // stale
-      const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
-      S=JSON.parse(JSON.stringify(msg.state)); S.pending=null; S.sel=-1;
-      online.ver=theirVer;
-      if(S.discard.length>prevDisc) castFx(S.discard[S.discard.length-1]);
-      online.loaded=true; saveSession(); render();
+    attachOnline(code,0);
+  }catch(e){ onlineNote('Could not join: '+fbErr(e),true); renderOnline(); }
+}
+function attachOnline(code,ver){
+  leaveOnline(true);
+  const db=firebase.database();
+  online={code,seat:null,seats:{w:null,b:null},ver:ver||0,unsubs:[],meta:null,state:null,hand:null,handSeat:null,loaded:false};
+  history=[];
+  const metaRef=db.ref('games/'+code+'/meta'), stateRef=db.ref('games/'+code+'/state');
+  const onMeta=metaRef.on('value',snap=>{
+    const m=snap.val(); if(!m){ onlineNote('Game no longer exists.',true); return; }
+    online.seats=Object.assign({w:null,b:null},m.seats||{});
+    const seat=online.seats.w===uid?'w':(online.seats.b===uid?'b':null);
+    if(seat!==online.handSeat){
+      if(online.handUnsub) online.handUnsub();
+      online.handSeat=seat; online.seat=seat; online.hand=null;
+      if(seat){ const hRef=db.ref('games/'+code+'/hands/'+seat); const cb=hRef.on('value',hs=>{ online.hand=hs.val()||[]; rebuild(); }, e=>onlineNote('Hand read failed: '+fbErr(e),true)); online.handUnsub=()=>hRef.off('value',cb); }
     }
-  });
-  conn.on('close',()=>{ if(online&&online.conn===conn){ clearInterval(online.hb); online.seats={w:online.seat==='w',b:online.seat==='b'}; onlineNote('Connection lost. Reconnecting…',true); render(); renderOnline(); if(online.retry) setTimeout(online.retry,1500); } });
-  conn.on('error',e=>onlineNote('Connection error: '+(e&&e.message||e),true));
+    online.seat=seat; rebuild(); renderOnline();
+  }, e=>onlineNote('Connection error: '+fbErr(e),true));
+  const onState=stateRef.on('value',snap=>{ const st=snap.val(); if(!st) return; online.state=st; rebuild(); }, e=>onlineNote('Connection error: '+fbErr(e),true));
+  online.unsubs.push(()=>metaRef.off('value',onMeta),()=>stateRef.off('value',onState));
+  try{ localStorage.setItem('spellchess_game',code); }catch(e){}
+  renderOnline(); onlineNote('Connected.');
+  const cRef=db.ref('.info/connected'); const cb=cRef.on('value',s=>{ if(online) onlineNote(s.val()?'Connected.':'Offline. Reconnecting…',!s.val()); }); online.unsubs.push(()=>cRef.off('value',cb));
+}
+function rebuild(){
+  if(!online||!online.state) return;
+  const st=online.state; const mine=online.seat;
+  if(mine && online.hand===null) return; // wait for our hand
+  const fresh=(st.ver||0)>(online.ver||0) || st.lastBy!==uid || !online.loaded;
+  if(!fresh){ return; }
+  const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
+  const ns=JSON.parse(JSON.stringify(st)); ns.pending=null; ns.sel=-1;
+  if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:{c:t[0],t:t[1]})); } }
+  for(const k of ['rocks','revealed','discard','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
+  ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
+  if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
+  const hc=ns.handCount||{w:0,b:0}; delete ns.handCount;
+  ns.hands={w:Array(hc.w).fill('?'),b:Array(hc.b).fill('?')};
+  if(mine) ns.hands[mine]=(online.hand||[]).slice();
+  S=ns; online.ver=st.ver||0;
+  if(S.discard.length>prevDisc && st.lastBy!==uid) castFx(S.discard[S.discard.length-1]);
+  online.loaded=true; render(); renderOnline();
 }
 function leaveOnline(silent){
-  if(online){ clearInterval(online.hb); try{ online.conn&&online.conn.close(); }catch(e){} try{ online.peer&&online.peer.destroy(); }catch(e){} }
-  online=null; try{ localStorage.removeItem('spellchess_session'); }catch(e){}
-  if(!silent){ renderOnline(); render(); }
-}
-function resumeSession(){
-  let ss=null; try{ ss=JSON.parse(localStorage.getItem('spellchess_session')||'null'); }catch(e){}
-  if(!ss||!ss.code||!ss.state) return false;
-  if(Date.now()-(ss.at||0)>6*3600*1000){ try{ localStorage.removeItem('spellchess_session'); }catch(e){} return false; }
-  S=ss.state; S.pending=null; S.sel=-1;
-  if(ss.seat==='w') hostGame(ss.code,ss.ver||0); else guestGame(ss.code,ss.ver||0,S);
-  onlineNote('Resuming game '+ss.code+'…');
-  return true;
+  if(online){ (online.unsubs||[]).forEach(f=>{ try{f();}catch(e){} }); if(online.handUnsub) try{ online.handUnsub(); }catch(e){} }
+  online=null; try{ localStorage.removeItem('spellchess_game'); }catch(e){}
+  if(!silent){ renderOnline(); newGame(); }
 }
 function renderOnline(){
   const btn=document.getElementById('onlineBtn'); const body=document.getElementById('onlineBody');
   btn.className='pill'+(online?' on':''); btn.textContent=online?('Online · '+online.code):'Play online';
+  const prevNote=document.getElementById('onlineNote'); const keep=prevNote?prevNote.textContent:'';
   if(!online){
     body.innerHTML=`<button id="olCreate" class="primary">Create game</button>
       <div class="online-row"><input id="olCode" placeholder="GAME CODE" maxlength="6"><button id="olJoin">Join</button></div>
-      <div class="online-note" id="onlineNote">Create a game and send the code to your opponent. If either of you reloads, the game resumes automatically.</div>`;
+      <div class="online-note" id="onlineNote">Create a game and send the code to your opponent. Either of you can close the page and come back later; the game is saved.</div>`;
     document.getElementById('olCreate').onclick=createOnline;
     document.getElementById('olJoin').onclick=()=>joinOnline(document.getElementById('olCode').value);
     document.getElementById('olCode').onkeydown=e=>{ if(e.key==='Enter') joinOnline(e.target.value); };
   } else {
     const seats=online.seats||{}; const waiting=!(seats.w&&seats.b);
-    body.innerHTML=`<div class="code">${online.code}</div><div>You are ${NAMES[online.seat]}. ${waiting?'Waiting for your opponent.':'Opponent connected.'}</div>
-      <div class="online-row"><button id="olLeave">Leave game</button></div><div class="online-note" id="onlineNote"></div>`;
+    const who=online.seat?`You are ${NAMES[online.seat]}.`:'You are spectating.';
+    body.innerHTML=`<div class="code">${online.code}</div><div>${who} ${waiting?'Waiting for your opponent to join with this code.':''}</div>
+      <div class="online-row"><button id="olLeave">Leave game</button></div><div class="online-note" id="onlineNote">${keep}</div>`;
     document.getElementById('olLeave').onclick=()=>leaveOnline();
   }
 }
@@ -740,15 +749,16 @@ document.getElementById('board').onmouseleave=()=>{ if(hoverSq>=0){ hoverSq=-1; 
 document.getElementById('gear').onclick=()=>{ const b=document.getElementById('settingsBlock'); b.hidden=!b.hidden; document.getElementById('onlineBlock').hidden=true; };
 document.getElementById('undo').onclick=undo;
 document.getElementById('resign').onclick=resign;
-document.getElementById('newgame').onclick=()=>{ newGame(); if(online){ if(!online.seat) return; commit(); } };
+document.getElementById('newgame').onclick=()=>{ if(online&&!online.seat) return; newGame(); if(online) commit({bothHands:true}); };
 document.getElementById('onlineBtn').onclick=()=>{ const b=document.getElementById('onlineBlock'); b.hidden=!b.hidden; document.getElementById('settingsBlock').hidden=true; };
 renderOnline();
 document.getElementById('sFlip').onchange=render;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); });
 
 function start(data){
-  if(resumeSession()) return;
-  if(data&&data.S){ S=data.S; history=data.history||[]; render(); } else newGame();
+  newGame(); initFirebase();
+  let saved=null; try{ saved=localStorage.getItem('spellchess_game'); }catch(e){}
+  if(saved && fbReady){ fbReady.then(ok=>{ if(ok) joinOnline(saved); }); }
 }
 window.claude?.hot?.snapshot?.(()=>({S,history}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});

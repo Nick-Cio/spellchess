@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "games": {
+      "$code": {
+        "meta": {
+          ".read": "auth != null",
+          "created": { ".write": "auth != null && !data.exists()" },
+          "seats": {
+            "w": { ".write": "auth != null && (!data.exists() || data.val() == auth.uid)" },
+            "b": { ".write": "auth != null && (!data.exists() || data.val() == auth.uid || root.child('games/' + $code + '/meta/seats/w').val() == auth.uid)" }
+          }
+        },
+        "state": {
+          ".read": "auth != null",
+          ".write": "auth != null && (!root.child('games/' + $code + '/meta').exists() || root.child('games/' + $code + '/meta/seats/w').val() == auth.uid || root.child('games/' + $code + '/meta/seats/b').val() == auth.uid)"
+        },
+        "hands": {
+          "$seat": {
+            ".read": "auth != null && root.child('games/' + $code + '/meta/seats/' + $seat).val() == auth.uid",
+            ".write": "auth != null && (!root.child('games/' + $code + '/meta').exists() || root.child('games/' + $code + '/meta/seats/w').val() == auth.uid || root.child('games/' + $code + '/meta/seats/b').val() == auth.uid)"
+          }
+        }
+      }
+    }
+  }
+}
