@@ -536,6 +536,7 @@ function afterCast(){
   const moves=allLegal(S);
   if(!moves.length){
     if(inCheck(S)){
+      if(S.mode==='pacifist' && (S.casts||0)<2 && S.hands[S.turn].length && spellCanEscape()){ S.notice='Still no escape. A second spell could save you.'; return; }
       S.over={winner:other(S.turn),reason:'checkmate'}; log(`Still no escape. ${NAMES[other(S.turn)]} wins.`,true); }
     else { log(`${NAMES[S.turn]} has no move and passes.`); endTurn(); }
   }
@@ -960,7 +961,7 @@ function render(){
     else if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
     else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
-    else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. Now move.`;
+    else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. `+(S.mode==='pacifist'&&(S.casts||0)<2?'Cast another or move.':'Now move.');
     else if(online && online.seats && !(online.seats.w&&online.seats.b)) h='Waiting for an opponent to join with code '+online.code+'.';
     else h='';
     hint.textContent=h; hint.className='hint'+(warn?' warn':'');
@@ -972,7 +973,7 @@ function render(){
   document.getElementById('handTitle').textContent=(online&&!spectator)?'Your hand':`${NAMES[me]}'s hand`;
   document.getElementById('handN').textContent=S.hands[me].length;
   const hand=document.getElementById('hand'); hand.innerHTML='';
-  const canCast=!S.over && !S.pending && canAct() && !S.spell && S.speedSq<0;
+  const canCast=!S.over && !S.pending && canAct() && (!S.spell || (S.mode==='pacifist' && (S.casts||0)<2)) && S.speedSq<0;
   if(spectator){ const n=document.createElement('div'); n.className='online-note'; n.textContent='Spectating. Hands are hidden.'; hand.appendChild(n); }
   else if(inMulligan()){
     const ms=mullSeat(); const mine=ms===me && !S.mull[me].done;

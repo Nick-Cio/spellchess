@@ -33,7 +33,7 @@ Chess, plus a deck of 15 spell cards. Play: https://nick-cio.github.io/spellches
 - "Opponent could hold" shows all 15 cards, greying out any you can account for (your hand, revealed, discarded). The rest are what your opponent might have.
 
 ## Pacifist mode (experimental)
-Same game, but spells can never take material. Chosen when creating a game.
+Same game, but spells can never take material, and you may cast up to 2 spells per turn. Chosen when creating a game.
 - Deck of 20 (4 of each spell). Each player is dealt 6 and may swap 1.
 - No hidden information: both hands are face up and nothing is revealed from the deck.
 - **Speed**: neither move may capture.
