@@ -153,6 +153,10 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .code{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;letter-spacing:.2em;margin:6px 0}
 .online-note{color:var(--muted);font-size:12px;margin-top:6px}
 .online-note.warn{color:var(--rage)}
+.modetag{font-family:Sora,sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border:1px solid var(--jump);color:var(--jump);border-radius:999px}
+.online-opts{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:8px 0 4px;font-size:12px;color:var(--muted)}
+.online-opts select,.online-opts input[type=number]{font:inherit;padding:3px 6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.online-opts input[type=number]{width:52px}
 .gear{margin-left:auto;font-size:20px;line-height:1;padding:4px 8px;border-color:transparent;background:transparent}
 .gear:hover{border-color:var(--line)}
 .block{background:var(--panel);border:1px solid var(--line);padding:10px 12px}
@@ -197,7 +201,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 </head>
 <body>
 
-<div class="top"><h1>Spellchess</h1><div class="status" id="status"></div><div class="hint" id="hint"></div><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
+<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
@@ -221,6 +225,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
         <label for="sHand">Cards dealt to each player</label><input id="sHand" type="number" min="0" max="6" value="3">
         <label for="sInit">Revealed at start</label><input id="sInit" type="number" min="0" max="12" value="2">
         <label for="sEvery">Reveal one every N full moves</label><input id="sEvery" type="number" min="1" max="20" value="4">
+        <label for="sMode">Game mode</label><select id="sMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option></select>
         <label for="sClock">Play with clock</label><input id="sClock" type="checkbox" checked>
         <label for="sMin">Minutes per side</label><input id="sMin" type="number" min="1" max="180" value="5">
         <label for="sInc">Increment (seconds)</label><input id="sInc" type="number" min="0" max="60" value="3">
@@ -371,10 +376,14 @@ function startBoard(){
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 function newGame(){
-  const hand=+document.getElementById('sHand').value, init=+document.getElementById('sInit').value, every=+document.getElementById('sEvery').value;
+  let hand=+document.getElementById('sHand').value, init=+document.getElementById('sInit').value, every=+document.getElementById('sEvery').value;
   const clockOn=document.getElementById('sClock').checked, mins=Math.max(1,+document.getElementById('sMin').value||5), incS=Math.max(0,+document.getElementById('sInc').value||0);
-  const deck=shuffle(['jump','rage','speed','earth','parasite'].flatMap(k=>[k,k,k]));
+  const mode=(document.getElementById('sMode')||{}).value||'classic';
+  const copies=mode==='pacifist'?4:3;
+  if(mode==='pacifist'){ hand=6; init=0; every=4; }
+  const deck=shuffle(['jump','rage','speed','earth','parasite'].flatMap(k=>Array(copies).fill(k)));
   S={
+    mode, copies,
     board:startBoard(), turn:'w',
     castling:{w:{k:true,q:true},b:{k:true,q:true}}, ep:-1,
     hands:{w:deck.splice(0,hand), b:deck.splice(0,hand)},
@@ -402,7 +411,7 @@ function gen(S,from,atk){ const noCastle=!!atk;
   const push=(to,x)=>out.push(Object.assign({from,to},x||{}));
   const landable=to=>{ if(to===S.phased) return false; const q=v(to); return !q||(q.c!==c&&q.c!=='x'&&(q.t!=='k'||atk)); };
   const passable=to=>!v(to);
-  const slide=(dirs)=>{ for(const [df,dr] of dirs){ let ff=f+df, rr=r+dr; while(inb(ff,rr)){ const to=rr*8+ff; if(landable(to)) push(to); if(!passable(to)) break; ff+=df; rr+=dr; } } };
+  const slide=(dirs)=>{ for(const [df,dr] of dirs){ let ff=f+df, rr=r+dr, via=false; while(inb(ff,rr)){ const to=rr*8+ff; if(landable(to)) push(to,via?{viaPhase:true}:undefined); if(to===S.phased) via=true; if(!passable(to)) break; ff+=df; rr+=dr; } } };
   const ROOK=[[1,0],[-1,0],[0,1],[0,-1]], BISH=[[1,1],[1,-1],[-1,1],[-1,-1]];
   if(t==='p'){
     const d=c==='w'?1:-1, start=c==='w'?1:6, last=c==='w'?7:0;
@@ -468,8 +477,10 @@ function legal(S,from){
   const speedFirst=S.spell&&S.spell.type==='speed'&&S.spell.stage===0;
   const speedSecond=S.spell&&S.spell.type==='speed'&&S.spell.stage===1;
   const noCap=m=>!(view(S)(m.to)||m.ep);
+  const pac=S.mode==='pacifist';
   return gen(S,from).filter(m=>{
     if(speedSecond && !noCap(m)) return false;
+    if(pac && !noCap(m)){ if(S.spell&&S.spell.type==='speed') return false; if(from===S.raged) return false; if(m.leap||m.viaPhase) return false; }
     const T=JSON.parse(JSON.stringify(S)); applyMove(T,m,{noFlip:true});
     if(safeAfter(T)) return true;
     // Speed: the first move may pass through check if some second move of the same piece ends safely
@@ -516,7 +527,7 @@ function spellCanEscape(){
     if(t==='speed'){ const T=JSON.parse(base); T.spell={type:'speed',stage:0}; if(ok(T)) return true; }
     if(t==='rage'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c===S.turn&&p.t!=='p'){ const T=JSON.parse(base); T.raged=i; if(ok(T)) return true; } } }
     if(t==='jump'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c!=='x'&&p.t!=='k'){ const T=JSON.parse(base); T.phased=i; if(ok(T)) return true; } } }
-    if(t==='earth'){ for(let i=0;i<64;i++){ const q=S.board[i]; if(!q || (q.c!=='x' && q.t!=='k')){ const T=JSON.parse(base); T.board[i]={c:'x',t:'rock',under:q||null}; if(ok(T)) return true; } } }
+    if(t==='earth'){ for(let i=0;i<64;i++){ const q=S.board[i]; if(!q || (q.c!=='x' && q.t!=='k' && (S.mode!=='pacifist' || q.c===S.turn))){ const T=JSON.parse(base); T.board[i]={c:'x',t:'rock',under:q||null}; if(ok(T)) return true; } } }
   }
   return false;
 }
@@ -554,7 +565,7 @@ function pickTargets(){
   for(let i=0;i<64;i++){ const p=S.board[i];
     if(t==='jump' && p && p.c!=='x' && p.t!=='k') out.push(i);
     if(t==='rage' && p && p.c===S.turn && p.t!=='p') out.push(i);
-    if(t==='earth' && (!p || (p.c!=='x' && p.t!=='k'))) out.push(i);
+    if(t==='earth' && (!p || (p.c!=='x' && p.t!=='k' && (S.mode!=='pacifist' || p.c===S.turn)))) out.push(i);
     if(t==='parasite' && p && p.c!=='x' && p.t!=='k') out.push(i);
   }
   return out;
@@ -736,6 +747,7 @@ function rebuild(){
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','discardBy','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
+  ns.mode=ns.mode||'classic'; ns.copies=ns.copies||3;
   ns.captured=ns.captured||{}; ns.captured.w=Array.isArray(ns.captured.w)?ns.captured.w:[]; ns.captured.b=Array.isArray(ns.captured.b)?ns.captured.b:[];
   ns.clock=ns.clock||{on:false}; if(ns.clock.on){ ns.clock.lastTick=ns.clock.lastTick||null; ns.clock.running=ns.clock.running||null; }
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
@@ -760,10 +772,17 @@ function renderOnline(){
   btn.className='pill'+(online?' on':''); btn.textContent=online?('Online · '+online.code):'Play online';
   const prevNote=document.getElementById('onlineNote'); const keep=prevNote?prevNote.textContent:'';
   if(!online){
-    body.innerHTML=`<button id="olCreate" class="primary">Create game</button>
+    const sv=id=>document.getElementById(id);
+    body.innerHTML=`<div class="online-opts">
+        <label>Mode <select id="olMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option></select></label>
+        <label><input type="checkbox" id="olClock"> Clock</label>
+        <span><input type="number" id="olMin" min="1" max="180"> min + <input type="number" id="olInc" min="0" max="60"> s</span>
+      </div>
+      <button id="olCreate" class="primary">Create game</button>
       <div class="online-row"><input id="olCode" placeholder="GAME CODE" maxlength="6"><button id="olJoin">Join</button></div>
       <div class="online-note" id="onlineNote">Create a game and send the code to your opponent. Either of you can close the page and come back later; the game is saved.</div>`;
-    document.getElementById('olCreate').onclick=createOnline;
+    sv('olMode').value=sv('sMode').value; sv('olClock').checked=sv('sClock').checked; sv('olMin').value=sv('sMin').value; sv('olInc').value=sv('sInc').value;
+    document.getElementById('olCreate').onclick=()=>{ sv('sMode').value=sv('olMode').value; sv('sClock').checked=sv('olClock').checked; sv('sMin').value=sv('olMin').value; sv('sInc').value=sv('olInc').value; createOnline(); };
     document.getElementById('olJoin').onclick=()=>joinOnline(document.getElementById('olCode').value);
     document.getElementById('olCode').onkeydown=e=>{ if(e.key==='Enter') joinOnline(e.target.value); };
   } else {
@@ -929,6 +948,7 @@ function render(){
   // status
   const st=document.getElementById('status'), hint=document.getElementById('hint');
   showEnd(); renderClocks(); renderBars();
+  document.getElementById('modeTag').hidden=S.mode!=='pacifist';
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
     if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
@@ -981,9 +1001,10 @@ function render(){
   let total=0;
   for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
-    const left=Math.max(0,3-known); total+=left;
+    const copies=S.copies||3; const left=Math.max(0,copies-known); total+=left;
     const st=document.createElement('div'); st.className='stack';
-    for(let i=0;i<3;i++){ const c=cardEl(t,'sm'+(i<3-left?' gone':''),false); c.style.top=(i*26)+'px'; c.style.zIndex=i; st.appendChild(c); }
+    st.style.height=(84+(copies-1)*26)+'px';
+    for(let i=0;i<copies;i++){ const c=cardEl(t,'sm'+(i<copies-left?' gone':''),false); c.style.top=(i*26)+'px'; c.style.zIndex=i; st.appendChild(c); }
     const n=document.createElement('div'); n.className='cnt'; n.textContent=left; st.appendChild(n);
     tr.appendChild(st);
   }

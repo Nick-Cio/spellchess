@@ -31,3 +31,12 @@ Chess, plus a deck of 15 spell cards. Play: https://nick-cio.github.io/spellches
 ## Reading the table
 - Your hand shows what you can cast.
 - "Opponent could hold" shows all 15 cards, greying out any you can account for (your hand, revealed, discarded). The rest are what your opponent might have.
+
+## Pacifist mode (experimental)
+Same game, but spells can never take material. Chosen when creating a game.
+- Deck of 20 (4 of each spell). Each player is dealt 6 and may swap 1. Nothing is revealed at the start; 1 card is revealed every 4 full moves, keeping the last 3 hidden.
+- **Speed**: neither move may capture.
+- **Rage**: the raged piece may not capture.
+- **Earth**: may only be placed on an empty square or one of your own pieces.
+- **Jump**: a leap may not land on a piece, and a slider that passes through the jumped piece may not capture beyond it.
+- **Parasite**: unchanged.
