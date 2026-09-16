@@ -34,7 +34,8 @@ Chess, plus a deck of 15 spell cards. Play: https://nick-cio.github.io/spellches
 
 ## Pacifist mode (experimental)
 Same game, but spells can never take material. Chosen when creating a game.
-- Deck of 20 (4 of each spell). Each player is dealt 6 and may swap 1. Nothing is revealed at the start; 1 card is revealed every 4 full moves, keeping the last 3 hidden.
+- Deck of 20 (4 of each spell). Each player is dealt 6 and may swap 1.
+- No hidden information: both hands are face up and nothing is revealed from the deck.
 - **Speed**: neither move may capture.
 - **Rage**: the raged piece may not capture.
 - **Earth**: may only be placed on an empty square or one of your own pieces.

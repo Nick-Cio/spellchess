@@ -241,10 +241,10 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 <div id="castfx" hidden><div class="fxwash"></div><div class="fxicon"></div><div class="fxname"></div></div>
 <script>
 const SPELLS={
-  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Jump over any piece this turn.'},
-  rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.'},
-  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.'},
-  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.'},
+  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Jump over any piece this turn.',tipPac:'Jump over any piece this turn. No capturing when landing.'},
+  rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.',tipPac:'A non-pawn piece moves as a queen this turn. It cannot capture.'},
+  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.',tipPac:'Move the same piece twice. No capturing on either move.'},
+  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.',tipPac:'Petrify an empty square or one of your own pieces until your next turn.'},
   parasite:{name:'Parasite',color:'#141414',ink:'#fff',tip:'Infect a piece. Its captor switches sides.'},
 };
 const PIX={
@@ -380,7 +380,7 @@ function newGame(){
   const clockOn=document.getElementById('sClock').checked, mins=Math.max(1,+document.getElementById('sMin').value||5), incS=Math.max(0,+document.getElementById('sInc').value||0);
   const mode=(document.getElementById('sMode')||{}).value||'classic';
   const copies=mode==='pacifist'?4:3;
-  if(mode==='pacifist'){ hand=6; init=0; every=4; }
+  if(mode==='pacifist'){ hand=6; init=0; every=0; }
   const deck=shuffle(['jump','rage','speed','earth','parasite'].flatMap(k=>Array(copies).fill(k)));
   S={
     mode, copies,
@@ -499,7 +499,7 @@ function endTurn(){
   if(S.clock&&S.clock.on&&S.clock.running&&S.clock.lastTick){ const t=clockNow(); S.clock[S.clock.running]=Math.max(0,S.clock[S.clock.running]-(t-S.clock.lastTick))+S.clock.inc; S.clock.lastTick=t; }
   // revert this turn's spell effects
   S.phased=-1; S.raged=-1; S.speedSq=-1; S.spell=null; S.pending=null; S.sel=-1; S.casts=0; S.mateEscape=false;
-  if(S.turn==='b'){ S.moveNo++; if((S.moveNo-1)%S.revealEvery===0 && S.deck.length>3){ const c=S.deck.shift(); S.revealed.push(c); log(`Deck reveals ${SPELLS[c].name}.`); } }
+  if(S.turn==='b'){ S.moveNo++; if(S.revealEvery>0 && (S.moveNo-1)%S.revealEvery===0 && S.deck.length>3){ const c=S.deck.shift(); S.revealed.push(c); log(`Deck reveals ${SPELLS[c].name}.`); } }
   S.turn=other(S.turn);
   if(S.clock&&S.clock.on){ S.clock.running=S.turn; if(!S.clock.lastTick) S.clock.lastTick=clockNow(); }
   // rocks owned by the player now moving expire
@@ -638,14 +638,14 @@ function mulliganStep(){
     const hand=(online.hand||[]).slice(); const idx=Math.min(Math.max(0,m.swapIdx|0),hand.length-1); if(hand.length===0) return;
     const card=hand.splice(idx,1)[0];
     online.mullBusy=true;
-    handRef.set(hand).then(()=>stateRef.transaction(st=>{ if(!st) return; st.deck=(Array.isArray(st.deck)?st.deck:[]).concat([card]); st.mull[me].returned=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=hand.length; st.ver=(st.ver||0)+1; st.lastBy='mull'; return st; }))
+    handRef.set(hand).then(()=>stateRef.transaction(st=>{ if(!st) return; st.deck=(Array.isArray(st.deck)?st.deck:[]).concat([card]); st.mull[me].returned=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=hand.length; if(st.mode==='pacifist'){ st.hands=st.hands||{}; st.hands[me]=hand.slice(); } st.ver=(st.ver||0)+1; st.lastBy='mull'; return st; }))
       .catch(e=>onlineNote('Mulligan failed: '+fbErr(e),true)).finally(()=>{ online.mullBusy=false; });
     return;
   }
   if(m.returned && opp.returned && !m.drew){
     // both cards are in the pool: shuffle and draw one
     let drawn=null; online.mullBusy=true;
-    stateRef.transaction(st=>{ if(!st) return; if(st.mull[me].drew) return; const deck=(Array.isArray(st.deck)?st.deck:[]).slice(); shuffle(deck); drawn=deck.shift()||null; st.deck=deck; st.mull[me].drew=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=(online.hand||[]).length+(drawn?1:0);
+    stateRef.transaction(st=>{ if(!st) return; if(st.mull[me].drew) return; const deck=(Array.isArray(st.deck)?st.deck:[]).slice(); shuffle(deck); drawn=deck.shift()||null; st.deck=deck; st.mull[me].drew=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=(online.hand||[]).length+(drawn?1:0); if(st.mode==='pacifist'){ st.hands=st.hands||{}; st.hands[me]=(online.hand||[]).slice().concat(drawn?[drawn]:[]); }
         if(st.mull.w.drew&&st.mull.b.drew&&st.phase==='mulligan'){ st.phase='play'; if(st.clock&&st.clock.on){ st.clock.running=st.turn||'w'; st.clock.lastTick=clockNow(); } const n=Math.max(0,Math.min(st.initReveal||0,deck.length-3)); st.revealed=deck.splice(0,n); st.deck=deck; }
         st.ver=(st.ver||0)+1; st.lastBy='mull'; return st; })
       .then(res=>{ if(res.committed&&drawn){ const hand=(online.hand||[]).slice(); hand.push(drawn); return handRef.set(hand); } })
@@ -670,7 +670,7 @@ function onlineNote(t,warn){ const n=document.getElementById('onlineNote'); if(n
 function fbErr(e){ const m=(e&&e.message)||String(e); if(/permission/i.test(m)) return 'Permission denied. The database rules may not be set up yet.'; return m; }
 function pubState(){
   const pub=JSON.parse(JSON.stringify(S)); pub.pending=null; pub.sel=-1;
-  pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; delete pub.hands;
+  pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; if(S.mode==='pacifist'){ pub.hands={w:S.hands.w.slice(),b:S.hands.b.slice()}; } else delete pub.hands;
   pub.board=S.board.map(q=>q?(q.c==='x'?(q.under?q.under.c.toUpperCase()+q.under.t:'xx'):q.c+q.t):'..').join('');
   return pub;
 }
@@ -739,7 +739,7 @@ function attachOnline(code,ver){
 function rebuild(){
   if(!online||!online.state) return;
   const st=online.state; const mine=online.seat;
-  if(mine && online.hand===null) return; // wait for our hand
+  if(mine && online.hand===null && st.mode!=='pacifist') return; // wait for our hand
   const fresh=(st.ver||0)>(online.ver||0) || st.lastBy!==uid || !online.loaded;
   if(!fresh){ return; }
   const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
@@ -753,8 +753,8 @@ function rebuild(){
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
   if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
   const hc=ns.handCount||{w:0,b:0}; delete ns.handCount;
-  ns.hands={w:Array(hc.w).fill('?'),b:Array(hc.b).fill('?')};
-  if(mine) ns.hands[mine]=(online.hand||[]).slice();
+  if(st.mode==='pacifist' && st.hands){ ns.hands={w:Array.isArray(st.hands.w)?st.hands.w.slice():[],b:Array.isArray(st.hands.b)?st.hands.b.slice():[]}; }
+  else { ns.hands={w:Array(hc.w).fill('?'),b:Array(hc.b).fill('?')}; if(mine) ns.hands[mine]=(online.hand||[]).slice(); }
   S=ns; online.ver=st.ver||0;
   if(S.discard.length>prevDisc && st.lastBy!==uid) castFx(S.discard[S.discard.length-1]);
   online.loaded=true;
@@ -851,7 +851,7 @@ function preview(sq){
 function cardEl(type,cls,tip){
   const d=document.createElement('div'); const sp=SPELLS[type];
   d.className='card '+(cls||''); d.dataset.type=type; d.style.background=sp.color; d.style.color=sp.ink; d.innerHTML=`<div class="art">${pixSvg(type,sp.ink)}</div><span>${sp.name}</span>`;
-  if(tip!==false){ d.onmouseenter=()=>showTip(d,sp.tip); d.onmouseleave=hideTip; }
+  if(tip!==false){ d.onmouseenter=()=>showTip(d,(S&&S.mode==='pacifist'&&sp.tipPac)?sp.tipPac:sp.tip); d.onmouseleave=hideTip; }
   return d;
 }
 let endShownFor=null;
@@ -997,9 +997,10 @@ function render(){
   document.getElementById('discN').textContent=S.discard.length;
   // tracker: copies the opponent could still hold = 3 - (my hand + revealed + discard)
   const tr=document.getElementById('track'); tr.innerHTML='';
-  document.getElementById('trackTitle').textContent=(online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`;
+  document.getElementById('trackTitle').textContent=S.mode==='pacifist'?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
   let total=0;
-  for(const t of Object.keys(SPELLS)){
+  if(S.mode==='pacifist'){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  else for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
     const copies=S.copies||3; const left=Math.max(0,copies-known); total+=left;
     const st=document.createElement('div'); st.className='stack';
@@ -1010,7 +1011,7 @@ function render(){
   }
   document.getElementById('trackN').textContent='';
   document.getElementById('deckN').textContent=S.deck.length;
-  const rem=S.revealEvery-((S.moveNo-1)%S.revealEvery); document.getElementById('nextRev').textContent=S.deck.length>3?rem:'—';
+  const rem=S.revealEvery>0?S.revealEvery-((S.moveNo-1)%S.revealEvery):0; document.getElementById('nextRev').textContent=(S.revealEvery>0&&S.deck.length>3)?rem:'—';
 }
 
 const tipEl=document.getElementById('tip');
