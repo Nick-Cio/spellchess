@@ -173,6 +173,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .card.playable:hover{transform:translateY(-4px)}
 .card.armed{outline:3px solid #fff;outline-offset:-6px;transform:translateY(-6px)}
 .card.dim{opacity:.45}
+.card.used{opacity:.32;filter:grayscale(1)}
 #tip{position:fixed;background:var(--ink);color:var(--bg);font:500 12px/1.3 "IBM Plex Sans",sans-serif;padding:6px 10px;border-radius:4px;z-index:50;pointer-events:none;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
 .track{display:flex;gap:18px;flex-wrap:wrap}
 .stack{position:relative;width:60px;height:calc(84px + 2*26px)}
@@ -216,9 +217,9 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   </div>
   <div class="side">
     <div class="block" id="handBlock"><h2><span id="handTitle">Hand</span><span class="n" id="handN"></span></h2><div class="cards" id="hand"></div></div>
-    <div class="block"><h2><span>Revealed from deck</span><span class="n" id="revN"></span></h2><div class="cards" id="revealed"></div>
+    <div class="block" id="revBlock"><h2><span>Revealed from deck</span><span class="n" id="revN"></span></h2><div class="cards" id="revealed"></div>
       <div class="deckrow" style="margin-top:10px"><span>Deck <b id="deckN"></b></span><span>Next reveal in <b id="nextRev"></b> moves</span></div></div>
-    <div class="block"><h2><span>Discard</span><span class="n" id="discN"></span></h2><div class="cards" id="discard" style="min-height:0"></div></div>
+    <div class="block" id="discBlock"><h2><span>Discard</span><span class="n" id="discN"></span></h2><div class="cards" id="discard" style="min-height:0"></div></div>
     <div class="block wide"><h2><span id="trackTitle">Opponent could hold</span><span class="n" id="trackN"></span></h2><div class="track" id="track"></div></div>
     <div class="block" id="settingsBlock" hidden><h2>Settings</h2>
       <div class="settings">
@@ -949,6 +950,7 @@ function render(){
   const st=document.getElementById('status'), hint=document.getElementById('hint');
   showEnd(); renderClocks(); renderBars();
   document.getElementById('modeTag').hidden=S.mode!=='pacifist';
+  document.getElementById('revBlock').hidden=S.mode==='pacifist'; document.getElementById('discBlock').hidden=S.mode==='pacifist';
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
     if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
@@ -984,6 +986,7 @@ function render(){
     hand.appendChild(row);
   }
   else S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } hand.appendChild(c); });
+  if(S.mode==='pacifist' && !spectator && !inMulligan()){ const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===me) hand.appendChild(cardEl(t,'used',false)); }); }
   const rev=document.getElementById('revealed'); rev.innerHTML=''; S.revealed.forEach(t=>rev.appendChild(cardEl(t,'sm')));
   document.getElementById('revN').textContent=S.revealed.length;
   const disc=document.getElementById('discard'); disc.innerHTML='';
@@ -999,7 +1002,7 @@ function render(){
   const tr=document.getElementById('track'); tr.innerHTML='';
   document.getElementById('trackTitle').textContent=S.mode==='pacifist'?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
   let total=0;
-  if(S.mode==='pacifist'){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  if(S.mode==='pacifist'){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
   else for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
     const copies=S.copies||3; const left=Math.max(0,copies-known); total+=left;
