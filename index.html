@@ -82,6 +82,10 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .promo .pc{font-family:"Apple Symbols","Segoe UI Symbol","DejaVu Sans","Noto Sans Symbols 2",sans-serif}
 .promo .pc.w{color:#fff;-webkit-text-stroke:2px #111;paint-order:stroke fill}
 .promo .pc.b{color:#111}
+.sq.dormant::before{content:"";position:absolute;inset:14%;border:2px dashed rgba(0,0,0,.7);border-radius:50%;animation:spin 6s linear infinite;pointer-events:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sq.awake .pc{animation:awake .9s ease-out}
+@keyframes awake{0%{transform:scale(1)}30%{transform:scale(1.35);filter:drop-shadow(0 0 18px #000)}100%{transform:scale(1)}}
 .sq .infdots{position:absolute;top:4%;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:3;pointer-events:none}
 .sq .infdots span{width:calc(var(--sq)*.12);height:calc(var(--sq)*.12);border-radius:50%;background:#000;border:1px solid #fff}
 #endfx{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);animation:endin .5s ease-out}
@@ -104,7 +108,7 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .sq.raged .pc{animation:ragethrob 1.2s ease-in-out infinite}
 @keyframes ragethrob{0%,100%{filter:drop-shadow(0 0 4px var(--rage)) drop-shadow(0 0 2px var(--rage))}50%{filter:drop-shadow(0 0 12px var(--rage)) drop-shadow(0 0 4px var(--rage));transform:scale(1.06)}}
 .sq.phased .pc{animation:phase 1.4s ease-in-out infinite}
-@keyframes phase{0%,100%{opacity:1;filter:drop-shadow(0 0 4px var(--jump))}50%{opacity:.45;filter:drop-shadow(0 0 14px var(--jump))}}
+@keyframes phase{0%,100%{transform:translateY(0);filter:drop-shadow(0 0 4px var(--jump))}50%{transform:translateY(-9%);filter:drop-shadow(0 0 14px var(--jump)) drop-shadow(0 6px 4px rgba(0,0,0,.35))}}
 .sq .rock.rise svg{animation:rockrise .5s cubic-bezier(.2,.9,.3,1.25) both}
 @keyframes rockrise{0%{clip-path:inset(100% 0 0 0);transform:translateY(18%)}70%{clip-path:inset(0 0 0 0);transform:translateY(-4%)}100%{clip-path:inset(0 0 0 0);transform:translateY(0)}}
 .sq.quake{animation:quake .4s ease-out}
@@ -163,6 +167,8 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .block h2{font-family:Sora,sans-serif;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between}
 .block h2 .n{color:var(--ink)}
 .cards{display:flex;gap:10px;flex-wrap:wrap;min-height:40px}
+.pair{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px dashed var(--line);border-radius:6px}
+.pairvs{font-family:Sora,sans-serif;font-size:11px;color:var(--muted);text-transform:uppercase}
 .card{position:relative;width:96px;height:134px;border:2px solid #000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 6px 8px;font-family:Sora,sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.05em;cursor:default}
 .card .art{width:64px;height:64px;margin-top:8px}
 .card .art svg{width:100%;height:100%;shape-rendering:crispEdges;image-rendering:pixelated}
@@ -174,6 +180,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .card.armed{outline:3px solid #fff;outline-offset:-6px;transform:translateY(-6px)}
 .card.dim{opacity:.45}
 .card.used{opacity:.32;filter:grayscale(1)}
+.card .pubtag{position:absolute;top:4px;right:4px;font-size:8px;letter-spacing:.06em;background:rgba(255,255,255,.85);color:#111;padding:1px 4px;border-radius:3px}
 #tip{position:fixed;background:var(--ink);color:var(--bg);font:500 12px/1.3 "IBM Plex Sans",sans-serif;padding:6px 10px;border-radius:4px;z-index:50;pointer-events:none;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
 .track{display:flex;gap:18px;flex-wrap:wrap}
 .stack{position:relative;width:60px;height:calc(84px + 2*26px)}
@@ -226,7 +233,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
         <label for="sHand">Cards dealt to each player</label><input id="sHand" type="number" min="0" max="6" value="3">
         <label for="sInit">Revealed at start</label><input id="sInit" type="number" min="0" max="12" value="2">
         <label for="sEvery">Reveal one every N full moves</label><input id="sEvery" type="number" min="1" max="20" value="4">
-        <label for="sMode">Game mode</label><select id="sMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option></select>
+        <label for="sMode">Game mode</label><select id="sMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option><option value="draft">Draft</option></select>
         <label for="sClock">Play with clock</label><input id="sClock" type="checkbox" checked>
         <label for="sMin">Minutes per side</label><input id="sMin" type="number" min="1" max="180" value="5">
         <label for="sInc">Increment (seconds)</label><input id="sInc" type="number" min="0" max="60" value="3">
@@ -242,7 +249,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 <div id="castfx" hidden><div class="fxwash"></div><div class="fxicon"></div><div class="fxname"></div></div>
 <script>
 const SPELLS={
-  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Jump over any piece this turn.',tipPac:'Jump over any piece this turn. No capturing when landing.'},
+  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Your piece may jump over one piece this turn.',tipPac:'Your piece may jump over one piece this turn. No capturing when landing.'},
   rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.',tipPac:'A non-pawn piece moves as a queen this turn. It cannot capture.'},
   speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.',tipPac:'Move the same piece twice. No capturing on either move.'},
   earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.',tipPac:'Petrify an empty square or one of your own pieces until your next turn.'},
@@ -380,8 +387,9 @@ function newGame(){
   let hand=+document.getElementById('sHand').value, init=+document.getElementById('sInit').value, every=+document.getElementById('sEvery').value;
   const clockOn=document.getElementById('sClock').checked, mins=Math.max(1,+document.getElementById('sMin').value||5), incS=Math.max(0,+document.getElementById('sInc').value||0);
   const mode=(document.getElementById('sMode')||{}).value||'classic';
-  const copies=mode==='pacifist'?4:3;
+  const copies=(mode==='pacifist'||mode==='draft')?4:3;
   if(mode==='pacifist'){ hand=6; init=0; every=0; }
+  if(mode==='draft'){ hand=0; init=0; every=0; }
   const deck=shuffle(['jump','rage','speed','earth','parasite'].flatMap(k=>Array(copies).fill(k)));
   S={
     mode, copies,
@@ -389,7 +397,8 @@ function newGame(){
     castling:{w:{k:true,q:true},b:{k:true,q:true}}, ep:-1,
     hands:{w:deck.splice(0,hand), b:deck.splice(0,hand)},
     deck, revealed:[], discard:[], discardBy:[], initReveal:init,
-    phase:'mulligan', mull:{w:{done:false},b:{done:false}}, mullSel:-1,
+    phase:mode==='draft'?'draft':'mulligan', mull:mode==='draft'?{w:{done:true},b:{done:true}}:{w:{done:false},b:{done:false}}, mullSel:-1,
+    draft:mode==='draft'?{w:{offers:makeOffers(deck),done:false,picks:null},b:{offers:makeOffers(deck),done:false,picks:null}}:null, pub:{w:[],b:[]},
     revealEvery:every, moveNo:1, captured:{w:[],b:[]},
     clock:clockOn?{on:true,w:mins*60000,b:mins*60000,inc:incS*1000,lastTick:null,running:null}:{on:false},
     rocks:[], infected:{}, spell:null, phased:-1, raged:-1, speedSq:-1, pending:null,
@@ -403,25 +412,28 @@ function log(s,me){S.log.push({s,me:!!me});}
 function snapshot(){history.push(JSON.stringify(S)); if(history.length>200) history.shift();}
 
 /* ---------- move generation ---------- */
-function view(S){return sq=>sq===S.phased?null:S.board[sq];}
+function view(S){return sq=>S.board[sq];}
 function inb(f,r){return f>=0&&f<8&&r>=0&&r<8;}
 function gen(S,from,atk){ const noCastle=!!atk;
   const v=view(S); const p=v(from); if(!p) return [];
   const c=p.c, t=(S.raged===from)?'q':p.t;
   const f=from%8, r=Math.floor(from/8); const out=[];
   const push=(to,x)=>out.push(Object.assign({from,to},x||{}));
-  const landable=to=>{ if(to===S.phased) return false; const q=v(to); return !q||(q.c!==c&&q.c!=='x'&&(q.t!=='k'||atk)); };
+  const landable=to=>{ const q=v(to); return !q||(q.c!==c&&q.c!=='x'&&(q.t!=='k'||atk)); };
   const passable=to=>!v(to);
-  const slide=(dirs)=>{ for(const [df,dr] of dirs){ let ff=f+df, rr=r+dr, via=false; while(inb(ff,rr)){ const to=rr*8+ff; if(landable(to)) push(to,via?{viaPhase:true}:undefined); if(to===S.phased) via=true; if(!passable(to)) break; ff+=df; rr+=dr; } } };
+  const jumper=S.jumper===from && !atk;
+  const slide=(dirs)=>{ for(const [df,dr] of dirs){ let ff=f+df, rr=r+dr, via=false; while(inb(ff,rr)){ const to=rr*8+ff; const q=v(to);
+      if(landable(to)) push(to,via?{viaPhase:true}:undefined);
+      if(!passable(to)){ if(jumper && !via && q && q.c!=='x'){ via=true; ff+=df; rr+=dr; continue; } break; }
+      ff+=df; rr+=dr; } } };
   const ROOK=[[1,0],[-1,0],[0,1],[0,-1]], BISH=[[1,1],[1,-1],[-1,1],[-1,-1]];
   if(t==='p'){
     const d=c==='w'?1:-1, start=c==='w'?1:6, last=c==='w'?7:0;
     const one=(r+d)*8+f;
-    if(inb(f,r+d) && one!==S.phased && !v(one)){ push(one,{promo:r+d===last});
-      const two=(r+2*d)*8+f; if(r===start && two!==S.phased && !v(two)) push(two,{dbl:true}); }
-    else if(inb(f,r+d) && one===S.phased){ const two=(r+2*d)*8+f; if(r===start && !v(two)) push(two,{dbl:true}); }
+    if(inb(f,r+d) && !v(one)){ push(one,{promo:r+d===last});
+      const two=(r+2*d)*8+f; if(r===start && !v(two)) push(two,{dbl:true}); }
     for(const df of [-1,1]){ if(!inb(f+df,r+d)) continue; const to=(r+d)*8+f+df; const q=v(to);
-      if(to!==S.phased && q && q.c!==c && q.c!=='x' && (q.t!=='k'||atk)) push(to,{promo:r+d===last});
+      if(q && q.c!==c && q.c!=='x' && (q.t!=='k'||atk)) push(to,{promo:r+d===last});
       else if(to===S.ep && !q) push(to,{ep:true}); }
   } else if(t==='n'){
     for(const [df,dr] of [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]) if(inb(f+df,r+dr)){const to=(r+dr)*8+f+df; if(landable(to)) push(to);}
@@ -430,16 +442,16 @@ function gen(S,from,atk){ const noCastle=!!atk;
     for(const [df,dr] of ROOK.concat(BISH)) if(inb(f+df,r+dr)){const to=(r+dr)*8+f+df; if(landable(to)) push(to);}
     if(!noCastle && p.t==='k'){
       const home=c==='w'?0:56; if(from===home+4 && !attacked(S,from,other(c))){
-        const empty=sq=>!v(sq)&&sq!==S.phased;
+        const empty=sq=>!v(sq);
         if(S.castling[c].k && empty(home+5)&&empty(home+6) && v(home+7)&&v(home+7).t==='r'&&v(home+7).c===c && !attacked(S,home+5,other(c))) push(home+6,{castle:'k'});
         if(S.castling[c].q && empty(home+3)&&empty(home+2)&&empty(home+1) && v(home)&&v(home).t==='r'&&v(home).c===c && !attacked(S,home+3,other(c))) push(home+2,{castle:'q'});
       }
     }
   }
-  // Jump: any of the caster's pieces adjacent to the phased piece may leap straight over it
-  if(S.phased>=0 && c===S.turn && p.t!=='x'){
-    const pf=S.phased%8, pr=Math.floor(S.phased/8); const df=pf-f, dr=pr-r;
-    if(Math.max(Math.abs(df),Math.abs(dr))===1){ const lf=pf+df, lr=pr+dr; if(inb(lf,lr)){ const to=lr*8+lf; if(landable(to) && !out.some(m=>m.to===to)) push(to,{leap:true,promo:p.t==='p'&&(lr===7||lr===0)}); } }
+  // Jump: the jumping piece may leap straight over an adjacent piece (pawns only forward)
+  if(jumper && p.t!=='x'){
+    const dirs=p.t==='p'?[[-1,c==='w'?1:-1],[0,c==='w'?1:-1],[1,c==='w'?1:-1]]:ROOK.concat(BISH);
+    for(const [df,dr] of dirs){ const mf=f+df, mr=r+dr, lf=f+2*df, lr=r+2*dr; if(!inb(mf,mr)||!inb(lf,lr)) continue; const mid=v(mr*8+mf); if(!mid||mid.c==='x') continue; const to=lr*8+lf; if(landable(to) && !out.some(m=>m.to===to)) push(to,{leap:true,promo:p.t==='p'&&(lr===7||lr===0)}); }
   }
   return out;
 }
@@ -461,7 +473,7 @@ function applyMove(S,m,opt){
   const capInf=inf[capSq]; delete inf[capSq];
   if(wasInf) inf[m.to]=wasInf;
   S.flipped=false;
-  if(cap && capInf && p.t!=='k' && !(opt&&opt.noFlip)){ b[m.to]={c:other(p.c),t:p.t}; S.flipped=true; delete inf[m.to]; }
+  if(cap && capInf && !capInf.dormant && p.t!=='k' && !(opt&&opt.noFlip)){ b[m.to]={c:other(p.c),t:p.t}; S.flipped=true; delete inf[m.to]; }
   if(m.castle==='k'){ b[m.from+1]=b[m.from+3]; b[m.from+3]=null; if(inf[m.from+3]){inf[m.from+1]=inf[m.from+3]; delete inf[m.from+3];} }
   if(m.castle==='q'){ b[m.from-1]=b[m.from-4]; b[m.from-4]=null; if(inf[m.from-4]){inf[m.from-1]=inf[m.from-4]; delete inf[m.from-4];} }
   if(p.t==='p' && (Math.floor(m.to/8)===7||Math.floor(m.to/8)===0)) b[m.to]={c:b[m.to].c,t:m.promoTo||'q'};
@@ -470,6 +482,7 @@ function applyMove(S,m,opt){
   const corner=(sq,c,side)=>{ if(sq===(c==='w'?0:56)) S.castling[c].q=false; if(sq===(c==='w'?7:63)) S.castling[c].k=false; };
   corner(m.from,p.c); if(cap) corner(m.to,cap.c);
   if(S.raged===m.from) S.raged=m.to;
+  if(S.jumper===m.from) S.jumper=m.to;
   return cap;
 }
 function safeAfter(T){ const k=kingSq(T,T.turn); return k<0 || !attacked(T,k,other(T.turn)); }
@@ -478,7 +491,7 @@ function legal(S,from){
   const speedFirst=S.spell&&S.spell.type==='speed'&&S.spell.stage===0;
   const speedSecond=S.spell&&S.spell.type==='speed'&&S.spell.stage===1;
   const noCap=m=>!(view(S)(m.to)||m.ep);
-  const pac=S.mode==='pacifist';
+  const pac=pacRules();
   return gen(S,from).filter(m=>{
     if(speedSecond && !noCap(m)) return false;
     if(pac && !noCap(m)){ if(S.spell&&S.spell.type==='speed') return false; if(from===S.raged) return false; if(m.leap||m.viaPhase) return false; }
@@ -491,7 +504,7 @@ function legal(S,from){
     return false;
   });
 }
-function allLegal(S){ const out=[]; for(let i=0;i<64;i++){const p=S.board[i]; if(p&&p.c===S.turn&&i!==S.phased) out.push(...legal(S,i));} return out; }
+function allLegal(S){ const out=[]; for(let i=0;i<64;i++){const p=S.board[i]; if(p&&p.c===S.turn) out.push(...legal(S,i));} return out; }
 function inCheck(S){ const k=kingSq(S,S.turn); return k>=0 && attacked(S,k,other(S.turn)); }
 
 /* ---------- turn flow ---------- */
@@ -499,14 +512,15 @@ function clockNow(){ return Date.now()+(window.__serverOffset||0); }
 function endTurn(){
   if(S.clock&&S.clock.on&&S.clock.running&&S.clock.lastTick){ const t=clockNow(); S.clock[S.clock.running]=Math.max(0,S.clock[S.clock.running]-(t-S.clock.lastTick))+S.clock.inc; S.clock.lastTick=t; }
   // revert this turn's spell effects
-  S.phased=-1; S.raged=-1; S.speedSq=-1; S.spell=null; S.pending=null; S.sel=-1; S.casts=0; S.mateEscape=false;
+  S.phased=-1; S.jumper=-1; S.raged=-1; S.speedSq=-1; S.spell=null; S.pending=null; S.sel=-1; S.casts=0; S.mateEscape=false;
   if(S.turn==='b'){ S.moveNo++; if(S.revealEvery>0 && (S.moveNo-1)%S.revealEvery===0 && S.deck.length>3){ const c=S.deck.shift(); S.revealed.push(c); log(`Deck reveals ${SPELLS[c].name}.`); } }
   S.turn=other(S.turn);
   if(S.clock&&S.clock.on){ S.clock.running=S.turn; if(!S.clock.lastTick) S.clock.lastTick=clockNow(); }
   // rocks owned by the player now moving expire
   S.rocks=S.rocks.filter(rk=>{ if(rk.owner===S.turn){ const cell=S.board[rk.sq]; S.board[rk.sq]=(cell&&cell.under)?cell.under:null; return false;} return true; });
   // parasite wears off: 3 opponent turns after casting
-  for(const k of Object.keys(S.infected||{})){ const r=S.infected[k]; const rec=typeof r==='string'?{by:r,left:3}:r; if(rec.by===S.turn){ rec.left--; if(rec.left<=0) delete S.infected[k]; else S.infected[k]=rec; } }
+  S.awakened=[];
+  for(const k of Object.keys(S.infected||{})){ const r=S.infected[k]; const rec=typeof r==='string'?{by:r,left:3}:r; if(rec.by===S.turn){ if(rec.dormant){ rec.dormant=false; S.infected[k]=rec; S.awakened.push(+k); } else { rec.left--; if(rec.left<=0) delete S.infected[k]; else S.infected[k]=rec; } } }
   S.notice='';
   if(S.hands[S.turn].includes('?')){ S.needEval=true; return; } // opponent's hand is hidden here; their client evaluates
   evaluateTurnStart();
@@ -527,8 +541,8 @@ function spellCanEscape(){
   for(const t of types){
     if(t==='speed'){ const T=JSON.parse(base); T.spell={type:'speed',stage:0}; if(ok(T)) return true; }
     if(t==='rage'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c===S.turn&&p.t!=='p'){ const T=JSON.parse(base); T.raged=i; if(ok(T)) return true; } } }
-    if(t==='jump'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c!=='x'&&p.t!=='k'){ const T=JSON.parse(base); T.phased=i; if(ok(T)) return true; } } }
-    if(t==='earth'){ for(let i=0;i<64;i++){ const q=S.board[i]; if(!q || (q.c!=='x' && q.t!=='k' && (S.mode!=='pacifist' || q.c===S.turn))){ const T=JSON.parse(base); T.board[i]={c:'x',t:'rock',under:q||null}; if(ok(T)) return true; } } }
+    if(t==='jump'){ for(let i=0;i<64;i++){ const p=S.board[i]; if(p&&p.c===S.turn){ const T=JSON.parse(base); T.jumper=i; if(ok(T)) return true; } } }
+    if(t==='earth'){ for(let i=0;i<64;i++){ const q=S.board[i]; if(!q || (q.c!=='x' && q.t!=='k' && (!pacRules() || q.c===S.turn))){ const T=JSON.parse(base); T.board[i]={c:'x',t:'rock',under:q||null}; if(ok(T)) return true; } } }
   }
   return false;
 }
@@ -536,7 +550,7 @@ function afterCast(){
   const moves=allLegal(S);
   if(!moves.length){
     if(inCheck(S)){
-      if(S.mode==='pacifist' && (S.casts||0)<2 && S.hands[S.turn].length && spellCanEscape()){ S.notice='Still no escape. A second spell could save you.'; return; }
+      if(pacRules() && (S.casts||0)<2 && S.hands[S.turn].length && spellCanEscape()){ S.notice='Still no escape. A second spell could save you.'; return; }
       S.over={winner:other(S.turn),reason:'checkmate'}; log(`Still no escape. ${NAMES[other(S.turn)]} wins.`,true); }
     else { log(`${NAMES[S.turn]} has no move and passes.`); endTurn(); }
   }
@@ -558,26 +572,27 @@ function doMove(m){
 function cast(idx){
   if(!canAct()) return;
   const type=S.hands[S.turn][idx];
-  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
+  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
   S.pending={type,idx}; S.sel=-1; render();
 }
+function pubPlayed(type){ if(!S.pub||!S.pub[S.turn]) return; const i=S.pub[S.turn].indexOf(type); if(i>=0) S.pub[S.turn].splice(i,1); }
 function pickTargets(){
   if(!S.pending) return [];
   const t=S.pending.type, out=[];
   for(let i=0;i<64;i++){ const p=S.board[i];
-    if(t==='jump' && p && p.c!=='x' && p.t!=='k') out.push(i);
+    if(t==='jump' && p && p.c===S.turn) out.push(i);
     if(t==='rage' && p && p.c===S.turn && p.t!=='p') out.push(i);
-    if(t==='earth' && (!p || (p.c!=='x' && p.t!=='k' && (S.mode!=='pacifist' || p.c===S.turn)))) out.push(i);
+    if(t==='earth' && (!p || (p.c!=='x' && p.t!=='k' && (!pacRules() || p.c===S.turn)))) out.push(i);
     if(t==='parasite' && p && p.c!=='x' && p.t!=='k') out.push(i);
   }
   return out;
 }
 function resolveTarget(sq){
   snapshot();
-  const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
-  if(type==='jump'){ S.phased=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
+  const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
+  if(type==='jump'){ S.jumper=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
   if(type==='rage'){ S.raged=sq; log(`${NAMES[S.turn]} casts Rage on ${sqName(sq)}.`,true); }
-  if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:3}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
+  if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:3,dormant:true}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
   if(type==='earth'){ const q=S.board[sq]; S.board[sq]={c:'x',t:'rock',under:q||null}; S.rocks.push({sq,owner:S.turn}); log(`${NAMES[S.turn]} casts Earth on ${sqName(sq)}.`,true); }
   flashSq=sq; flashT0=Date.now(); setTimeout(()=>{ if(flashSq===sq){ flashSq=-1; render(); } },650);
   afterCast(); render(); commit();
@@ -605,7 +620,48 @@ function initFirebase(){
   });
 }
 function mySeat(){ return online?online.seat:S.turn; }
+function pacRules(){ return S.mode==='pacifist'||S.mode==='draft'; }
+function openHands(){ return S.mode==='pacifist'; }
 function inMulligan(){ return S.phase==='mulligan'; }
+function inDraft(){ return S.phase==='draft'; }
+function draftSeat(){ if(!inDraft()) return null; if(online) return online.seat; return !S.draft.w.done?'w':(!S.draft.b.done?'b':null); }
+function makeOffers(deck){ const offers=[]; for(let i=0;i<3;i++){ const a=deck.shift(); let j=deck.findIndex(x=>x!==a); if(j<0) j=0; const b=deck.splice(j,1)[0]; offers.push([a,b]); } return offers; }
+function applyDraft(seat,picks){
+  const d=S.draft[seat]; if(!d||d.done) return;
+  d.picks=picks.slice(); d.done=true;
+  const keep=d.offers.map((pr,i)=>pr[picks[i]]), give=d.offers.map((pr,i)=>pr[1-picks[i]]);
+  S.hands[seat]=keep; S.pub[other(seat)]=give; d.give=give;
+  finishDraftIfDone();
+}
+function doDraft(seat,picks){
+  if(!online){ snapshot(); applyDraft(seat,picks); S.draftSel=null; render(); return; }
+  if(online.seat!==seat) return;
+  const offers=S.draft[seat].offers; if(!offers) return;
+  const keep=offers.map((pr,i)=>pr[picks[i]]), give=offers.map((pr,i)=>pr[1-picks[i]]);
+  const db=firebase.database(); const stateRef=db.ref('games/'+online.code+'/state'); const handRef=db.ref('games/'+online.code+'/hands/'+seat);
+  handRef.set(keep).then(()=>stateRef.transaction(st=>{ if(!st) return; st.draft=st.draft||{}; st.draft[seat]=Object.assign({},st.draft[seat]||{},{done:true,assembled:false}); st.pub=st.pub||{}; st.pub[other(seat)]=give; st.handCount=st.handCount||{w:0,b:0}; st.handCount[seat]=keep.length; st.ver=(st.ver||0)+1; st.lastBy='draft'; return st; }))
+    .catch(e=>onlineNote('Draft failed: '+fbErr(e),true));
+}
+function draftStep(){
+  if(!online||!online.seat||S.phase!=='draft'||online.draftBusy) return;
+  const me=online.seat, d=S.draft&&S.draft[me], o=S.draft&&S.draft[other(me)]; if(!d||!o) return;
+  if(d.done && o.done && !d.assembled){
+    const hand=(online.hand||[]).slice().concat((S.pub&&S.pub[me])||[]);
+    const db=firebase.database(); const stateRef=db.ref('games/'+online.code+'/state'); const handRef=db.ref('games/'+online.code+'/hands/'+me);
+    online.draftBusy=true;
+    handRef.set(hand).then(()=>stateRef.transaction(st=>{ if(!st) return; if(st.draft[me].assembled) return; st.draft[me].assembled=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=hand.length;
+        if(st.draft.w.assembled&&st.draft.b.assembled&&st.phase==='draft'){ st.phase='play'; if(st.clock&&st.clock.on){ st.clock.running=st.turn||'w'; st.clock.lastTick=clockNow(); } }
+        st.ver=(st.ver||0)+1; st.lastBy='draft'; return st; }))
+      .catch(e=>onlineNote('Draft failed: '+fbErr(e),true)).finally(()=>{ online.draftBusy=false; });
+  }
+}
+function finishDraftIfDone(){
+  if(S.draft.w.done && S.draft.b.done && S.phase==='draft'){
+    for(const s of ['w','b']){ S.hands[s]=S.hands[s].concat(S.pub[s]); }
+    S.phase='play';
+    if(S.clock&&S.clock.on){ S.clock.running=S.turn; S.clock.lastTick=clockNow(); }
+  }
+}
 function mullSeat(){ if(!inMulligan()) return null; if(online) return online.seat; return !S.mull.w.done?'w':(!S.mull.b.done?'b':null); }
 function applyMulligan(seat,idx){
   let card=null;
@@ -666,12 +722,13 @@ function finishMulliganIfDone(){
     S.revealed=S.deck.splice(0,n);
   }
 }
-function canAct(){ if(inMulligan()) return false; return !online || (online.seat && online.seat===S.turn && online.seats && online.seats.w && online.seats.b); }
+function canAct(){ if(inMulligan()||inDraft()) return false; return !online || (online.seat && online.seat===S.turn && online.seats && online.seats.w && online.seats.b); }
 function makeCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c=''; for(let i=0;i<5;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
 function onlineNote(t,warn){ const n=document.getElementById('onlineNote'); if(n){ n.textContent=t; n.className='online-note'+(warn?' warn':''); } }
 function fbErr(e){ const m=(e&&e.message)||String(e); if(/permission/i.test(m)) return 'Permission denied. The database rules may not be set up yet.'; return m; }
 function pubState(){
   const pub=JSON.parse(JSON.stringify(S)); pub.pending=null; pub.sel=-1;
+  if(pub.draft){ for(const s of ['w','b']) if(pub.draft[s]){ pub.draft[s]=Object.assign({},pub.draft[s]); delete pub.draft[s].offers; delete pub.draft[s].picks; } }
   pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; if(S.mode==='pacifist'){ pub.hands={w:S.hands.w.slice(),b:S.hands.b.slice()}; } else delete pub.hands;
   pub.board=S.board.map(q=>q?(q.c==='x'?(q.under?q.under.c.toUpperCase()+q.under.t:'xx'):q.c+q.t):'..').join('');
   return pub;
@@ -694,8 +751,8 @@ async function createOnline(){
   const creatorSeat=Math.random()<0.5?'w':'b';
   upd['games/'+code+'/meta']={created:firebase.database.ServerValue.TIMESTAMP,seats:{w:creatorSeat==='w'?uid:null,b:creatorSeat==='b'?uid:null}};
   upd['games/'+code+'/state']=pub;
-  upd['games/'+code+'/hands/w']=S.hands.w.slice();
-  upd['games/'+code+'/hands/b']=S.hands.b.slice();
+  upd['games/'+code+'/hands/w']=S.mode==='draft'?S.draft.w.offers.flat():S.hands.w.slice();
+  upd['games/'+code+'/hands/b']=S.mode==='draft'?S.draft.b.offers.flat():S.hands.b.slice();
   try{ await firebase.database().ref().update(upd); attachOnline(code,1); }
   catch(e){ onlineNote('Could not create game: '+fbErr(e),true); }
 }
@@ -749,18 +806,20 @@ function rebuild(){
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','discardBy','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
-  ns.mode=ns.mode||'classic'; ns.copies=ns.copies||3;
+  ns.mode=ns.mode||'classic'; ns.copies=ns.copies||3; ns.pub=ns.pub||{}; ns.pub.w=Array.isArray(ns.pub.w)?ns.pub.w:[]; ns.pub.b=Array.isArray(ns.pub.b)?ns.pub.b:[];
+  if(ns.mode==='draft'){ ns.draft=ns.draft||{}; for(const sd of ['w','b']){ ns.draft[sd]=Object.assign({done:false,assembled:false},ns.draft[sd]||{}); } }
   ns.captured=ns.captured||{}; ns.captured.w=Array.isArray(ns.captured.w)?ns.captured.w:[]; ns.captured.b=Array.isArray(ns.captured.b)?ns.captured.b:[];
   ns.clock=ns.clock||{on:false}; if(ns.clock.on){ ns.clock.lastTick=ns.clock.lastTick||null; ns.clock.running=ns.clock.running||null; }
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
-  if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
+  if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.jumper!=='number') ns.jumper=-1; if(!Array.isArray(ns.awakened)) ns.awakened=[]; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
   const hc=ns.handCount||{w:0,b:0}; delete ns.handCount;
   if(st.mode==='pacifist' && st.hands){ ns.hands={w:Array.isArray(st.hands.w)?st.hands.w.slice():[],b:Array.isArray(st.hands.b)?st.hands.b.slice():[]}; }
   else { ns.hands={w:Array(hc.w).fill('?'),b:Array(hc.b).fill('?')}; if(mine) ns.hands[mine]=(online.hand||[]).slice(); }
+  if(ns.phase==='draft' && mine && ns.draft[mine] && !ns.draft[mine].done){ const off=(online.hand||[]); ns.draft[mine].offers=[[off[0],off[1]],[off[2],off[3]],[off[4],off[5]]].filter(pr=>pr[0]&&pr[1]); ns.hands[mine]=[]; if(S&&S.draftSel) ns.draftSel=S.draftSel; }
   S=ns; online.ver=st.ver||0;
   if(S.discard.length>prevDisc && st.lastBy!==uid) castFx(S.discard[S.discard.length-1]);
   online.loaded=true;
-  mulliganStep();
+  mulliganStep(); draftStep();
   if(S.needEval && online.seat===S.turn && !S.over){ evaluateTurnStart(); render(); renderOnline(); commit(); return; }
   render(); renderOnline();
 }
@@ -776,7 +835,7 @@ function renderOnline(){
   if(!online){
     const sv=id=>document.getElementById(id);
     body.innerHTML=`<div class="online-opts">
-        <label>Mode <select id="olMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option></select></label>
+        <label>Mode <select id="olMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option><option value="draft">Draft</option></select></label>
         <label><input type="checkbox" id="olClock"> Clock</label>
         <span><input type="number" id="olMin" min="1" max="180"> min + <input type="number" id="olInc" min="0" max="60"> s</span>
       </div>
@@ -812,7 +871,7 @@ function clickSquare(sq){
     if(m){ if(m.promo&&!m.promoTo){ askPromotion(m); return; } doMove(m); return; }
   }
   if(S.speedSq>=0){ S.sel=S.speedSq; render(); return; }
-  if(p && p.c===S.turn && sq!==S.phased){ S.sel=(S.sel===sq)?-1:sq; } else S.sel=-1;
+  if(p && p.c===S.turn){ S.sel=(S.sel===sq)?-1:sq; } else S.sel=-1;
   render();
 }
 function undo(){ if(S.pending){ S.pending=null; render(); return; } if(online||!history.length) return; S=JSON.parse(history.pop()); S.sel=-1; render(); }
@@ -820,6 +879,23 @@ function cancelSpell(){ if(S.pending){ S.pending=null; render(); } }
 function resign(){ if(S.over) return; if(online){ if(!online.seat) return; snapshot(); S.over={winner:other(online.seat),reason:'resignation'}; render(); commit(); return; } snapshot(); S.over={winner:other(S.turn),reason:'resignation'}; log(`${NAMES[S.turn]} resigns.`,true); render(); }
 
 /* ---------- cast overlay ---------- */
+let awakeSq=-1, awakeShown=new Set();
+function awakenFx(sqs){
+  const fx=document.getElementById('castfx');
+  fx.style.setProperty('--spell','#141414');
+  fx.querySelector('.fxicon').innerHTML=pixSvg('parasite','#fff');
+  fx.querySelector('.fxname').textContent='Parasite awakens';
+  fx.hidden=true; void fx.offsetWidth; fx.hidden=false;
+  clearTimeout(castFx.t); castFx.t=setTimeout(()=>{fx.hidden=true;},1400);
+  awakeSq=sqs[0]; setTimeout(()=>{ awakeSq=-1; render(); },1000);
+}
+function checkAwaken(viewSide){
+  if(!S||!Array.isArray(S.awakened)||!S.awakened.length) return;
+  if(S.turn!==viewSide) return;
+  const key=(S.moveNo||0)+':'+S.turn+':'+S.awakened.join(',');
+  if(awakeShown.has(key)) return; awakeShown.add(key);
+  awakenFx(S.awakened);
+}
 function castFx(type){
   const fx=document.getElementById('castfx'); const sp=SPELLS[type];
   fx.style.setProperty('--spell',sp.color);
@@ -853,7 +929,7 @@ function preview(sq){
 function cardEl(type,cls,tip){
   const d=document.createElement('div'); const sp=SPELLS[type];
   d.className='card '+(cls||''); d.dataset.type=type; d.style.background=sp.color; d.style.color=sp.ink; d.innerHTML=`<div class="art">${pixSvg(type,sp.ink)}</div><span>${sp.name}</span>`;
-  if(tip!==false){ d.onmouseenter=()=>showTip(d,(S&&S.mode==='pacifist'&&sp.tipPac)?sp.tipPac:sp.tip); d.onmouseleave=hideTip; }
+  if(tip!==false){ d.onmouseenter=()=>showTip(d,(S&&pacRules()&&sp.tipPac)?sp.tipPac:sp.tip); d.onmouseleave=hideTip; }
   return d;
 }
 let endShownFor=null;
@@ -911,7 +987,7 @@ function showEnd(){
 }
 function render(){
   if(!S.pending) hoverSq=-1;
-  const view=(inMulligan()&&!online)?(mullSeat()||S.turn):(mySeat()||S.turn);
+  const view=(inMulligan()&&!online)?(mullSeat()||S.turn):((inDraft()&&!online)?(draftSeat()||S.turn):(mySeat()||S.turn));
   const flip=online?(online.seat==='b'):(document.getElementById('sFlip').checked && S.turn==='b');
   const board=document.getElementById('board'); board.innerHTML='';
   const legalMoves=(S.sel>=0&&!S.pending)?legal(S,S.sel):[];
@@ -924,14 +1000,14 @@ function render(){
     const d=document.createElement('div'); d.className='sq '+(((r+f)%2)?'lt':'dk');
     if(S.lastMove&&S.lastMove.includes(sq)) d.classList.add('last');
     if(S.sel===sq) d.classList.add('sel');
-    if(S.phased===sq) d.classList.add('phased');
+    if(S.jumper===sq) d.classList.add('phased');
     if(S.raged===sq) d.classList.add('raged');
     if(S.speedSq===sq) d.classList.add('speed');
     const sk=streak.find(x=>x.sq===sq); if(sk){ const e=document.createElement('div'); e.className='streak'; e.style.animationDelay=(sk.d-(Date.now()-streakT0))+'ms'; d.appendChild(e); }
     if(targets.includes(sq)){ d.classList.add('cand'); if(sq===hoverSq) d.classList.add('hov'); }
     if(flashSq===sq){ const fr=document.createElement('div'); fr.className='flashring'; fr.style.animationDelay=since(flashT0); d.appendChild(fr); }
     const pv=prev.find(x=>x.to===sq); if(pv){ const o=document.createElement('div'); o.className=pv.cap?'prevcap':'prev'; d.appendChild(o); }
-    const infRec=infOf(sq); if(infRec && (infRec.by===view || S.over)){ d.classList.add('infected'); d.style.setProperty('--ph',(-(Date.now()%2400))+'ms'); const dots=document.createElement('div'); dots.className='infdots'; for(let k=0;k<infRec.left;k++){ const o=document.createElement('span'); dots.appendChild(o); } d.appendChild(dots); }
+    const infRec=infOf(sq); if(infRec && (infRec.by===view || S.over)){ d.classList.add(infRec.dormant?'dormant':'infected'); if(awakeSq===sq) d.classList.add('awake'); d.style.setProperty('--ph',(-(Date.now()%2400))+'ms'); const dots=document.createElement('div'); dots.className='infdots'; for(let k=0;k<infRec.left;k++){ const o=document.createElement('span'); dots.appendChild(o); } d.appendChild(dots); }
     if(S.pending&&S.pending.type==='parasite'&&sq===hoverSq&&targets.includes(sq)) d.classList.add('infected');
     if(flipSq===sq){ d.classList.add('flipanim'); d.style.setProperty('--t0',since(flipT0)); const fr=document.createElement('div'); fr.className='flashring dark'; fr.style.animationDelay=since(flipT0); d.appendChild(fr); }
     if(S.pending&&S.pending.type==='earth'&&sq===hoverSq&&targets.includes(sq)){ const k=document.createElement('div'); k.className='rock ghost'; k.innerHTML=ROCK_SVG; d.appendChild(k); }
@@ -940,7 +1016,7 @@ function render(){
     const p=S.board[sq];
     if(p){ if(p.c==='x'){ if(p.under){ const s=document.createElement('span'); s.className='pc '+p.under.c+' encased'; s.textContent=GLYPH.b[p.under.t]+'\uFE0E'; d.appendChild(s); } const k=document.createElement('div'); k.className='rock'+(p.under?' encase':'')+(rockDrop===sq?' rise':''); k.innerHTML=ROCK_SVG+(rockDrop===sq?'<i class="dust"></i><i class="dust"></i><i class="dust"></i><i class="dust"></i>':''); if(rockDrop===sq){ k.querySelector('svg').style.animationDelay=since(rockT0); k.querySelectorAll('.dust').forEach(e=>e.style.animationDelay=since(rockT0)); d.classList.add('quake'); d.style.animationDelay=since(rockT0); } d.appendChild(k); }
       else { const s=document.createElement('span'); s.className='pc '+p.c; s.textContent=GLYPH.b[p.t]+'︎'; d.appendChild(s); }
-      if(p.c===S.turn && sq!==S.phased && !S.over && !S.pending && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
+      if(p.c===S.turn && !S.over && !S.pending && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
     const m=legalMoves.find(m=>m.to===sq);
     if(m){ d.classList.add('tgt'); const o=document.createElement('div'); o.className=(S.board[sq]||m.ep)?'ring':'dot'; d.appendChild(o); }
     d.onclick=()=>clickSquare(sq);
@@ -949,19 +1025,47 @@ function render(){
   }
   // status
   const st=document.getElementById('status'), hint=document.getElementById('hint');
-  showEnd(); renderClocks(); renderBars();
-  document.getElementById('modeTag').hidden=S.mode!=='pacifist';
-  document.getElementById('revBlock').hidden=S.mode==='pacifist'; document.getElementById('discBlock').hidden=S.mode==='pacifist';
+  showEnd(); renderClocks(); renderBars(); checkAwaken(view);
+  document.getElementById('modeTag').hidden=!pacRules(); document.getElementById('modeTag').textContent=S.mode==='draft'?'Draft':'Pacifist';
+  document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
-    if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
+    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?(ds?(S.draft[ds].done?'Waiting for opponent':'Draft your spells'):'Players are drafting'):`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}: draft your spells`; }
+    else if(inDraft()){
+    const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
+    if(mine){
+      S.draftSel=S.draftSel||[-1,-1,-1];
+      d.offers.forEach((pr,i)=>{ const g=document.createElement('div'); g.className='pair'; pr.forEach((t,j)=>{ const c=cardEl(t, S.draftSel[i]===j?'armed':'playable'); c.onclick=()=>{ S.draftSel[i]=j; render(); }; g.appendChild(c); }); const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[1]); hand.appendChild(g); });
+      const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
+      const ok=S.draftSel.every(x=>x>=0);
+      const b=document.createElement('button'); b.className='primary'; b.textContent=ok?'Confirm draft':'Pick one from each pair'; b.disabled=!ok; b.onclick=()=>doDraft(me,S.draftSel.slice()); row.appendChild(b); hand.appendChild(row);
+    } else {
+      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
+      if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
+    }
+  }
+  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
     else st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
-    if(inMulligan()){ const ms=mullSeat(); h=(ms&&!S.mull[ms].done)?'Swap one spell for a random one from the deck, or keep your hand.':'Waiting for the other player to choose.'; }
-    else if(S.pending){ h={jump:'Jump: pick any piece except a king. Your pieces pass through it, and neighbours can leap over it.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
+    if(inDraft()){ const ds=draftSeat(); h=(ds&&!S.draft[ds].done)?'Pick one card from each pair. The other goes to your opponent, face up.':'Waiting for the other player to draft.'; }
+    else if(inDraft()){
+    const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
+    if(mine){
+      S.draftSel=S.draftSel||[-1,-1,-1];
+      d.offers.forEach((pr,i)=>{ const g=document.createElement('div'); g.className='pair'; pr.forEach((t,j)=>{ const c=cardEl(t, S.draftSel[i]===j?'armed':'playable'); c.onclick=()=>{ S.draftSel[i]=j; render(); }; g.appendChild(c); }); const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[1]); hand.appendChild(g); });
+      const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
+      const ok=S.draftSel.every(x=>x>=0);
+      const b=document.createElement('button'); b.className='primary'; b.textContent=ok?'Confirm draft':'Pick one from each pair'; b.disabled=!ok; b.onclick=()=>doDraft(me,S.draftSel.slice()); row.appendChild(b); hand.appendChild(row);
+    } else {
+      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
+      if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
+    }
+  }
+  else if(inMulligan()){ const ms=mullSeat(); h=(ms&&!S.mull[ms].done)?'Swap one spell for a random one from the deck, or keep your hand.':'Waiting for the other player to choose.'; }
+    else if(S.pending){ h={jump:'Jump: pick one of your pieces. This turn it may pass over one piece in its path, or leap over an adjacent piece.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
     else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
-    else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. `+(S.mode==='pacifist'&&(S.casts||0)<2?'Cast another or move.':'Now move.');
+    else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. `+(pacRules()&&(S.casts||0)<2?'Cast another or move.':'Now move.');
     else if(online && online.seats && !(online.seats.w&&online.seats.b)) h='Waiting for an opponent to join with code '+online.code+'.';
     else h='';
     hint.textContent=h; hint.className='hint'+(warn?' warn':'');
@@ -973,8 +1077,21 @@ function render(){
   document.getElementById('handTitle').textContent=(online&&!spectator)?'Your hand':`${NAMES[me]}'s hand`;
   document.getElementById('handN').textContent=S.hands[me].length;
   const hand=document.getElementById('hand'); hand.innerHTML='';
-  const canCast=!S.over && !S.pending && canAct() && (!S.spell || (S.mode==='pacifist' && (S.casts||0)<2)) && S.speedSq<0;
+  const canCast=!S.over && !S.pending && canAct() && (!S.spell || (pacRules() && (S.casts||0)<2)) && S.speedSq<0;
   if(spectator){ const n=document.createElement('div'); n.className='online-note'; n.textContent='Spectating. Hands are hidden.'; hand.appendChild(n); }
+  else if(inDraft()){
+    const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
+    if(mine){
+      S.draftSel=S.draftSel||[-1,-1,-1];
+      d.offers.forEach((pr,i)=>{ const g=document.createElement('div'); g.className='pair'; pr.forEach((t,j)=>{ const c=cardEl(t, S.draftSel[i]===j?'armed':'playable'); c.onclick=()=>{ S.draftSel[i]=j; render(); }; g.appendChild(c); }); const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[1]); hand.appendChild(g); });
+      const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
+      const ok=S.draftSel.every(x=>x>=0);
+      const b=document.createElement('button'); b.className='primary'; b.textContent=ok?'Confirm draft':'Pick one from each pair'; b.disabled=!ok; b.onclick=()=>doDraft(me,S.draftSel.slice()); row.appendChild(b); hand.appendChild(row);
+    } else {
+      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
+      if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
+    }
+  }
   else if(inMulligan()){
     const ms=mullSeat(); const mine=ms===me && !S.mull[me].done;
     S.hands[me].forEach((t,i)=>{ const c=cardEl(t, mine?(S.mullSel===i?'armed':'playable'):'dim'); if(mine) c.onclick=()=>{ S.mullSel=(S.mullSel===i)?-1:i; render(); }; hand.appendChild(c); });
@@ -986,8 +1103,9 @@ function render(){
     } else { const n=document.createElement('div'); n.className='online-note'; n.textContent=(S.mull[me]&&S.mull[me].done)?'Hand locked in.':''; row.appendChild(n); }
     hand.appendChild(row);
   }
-  else S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } hand.appendChild(c); });
-  if(S.mode==='pacifist' && !spectator && !inMulligan()){ const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===me) hand.appendChild(cardEl(t,'used',false)); }); }
+  else { const pubLeft=Object.assign({},(S.pub&&S.pub[me])?S.pub[me].reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{}):{});
+    S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } if(S.mode==='draft'&&pubLeft[t]>0){ pubLeft[t]--; const tag=document.createElement('span'); tag.className='pubtag'; tag.textContent='public'; c.appendChild(tag); } hand.appendChild(c); }); }
+  if(pacRules() && !spectator && !inMulligan() && !inDraft()){ const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===me) hand.appendChild(cardEl(t,'used',false)); }); }
   const rev=document.getElementById('revealed'); rev.innerHTML=''; S.revealed.forEach(t=>rev.appendChild(cardEl(t,'sm')));
   document.getElementById('revN').textContent=S.revealed.length;
   const disc=document.getElementById('discard'); disc.innerHTML='';
@@ -1001,9 +1119,10 @@ function render(){
   document.getElementById('discN').textContent=S.discard.length;
   // tracker: copies the opponent could still hold = 3 - (my hand + revealed + discard)
   const tr=document.getElementById('track'); tr.innerHTML='';
-  document.getElementById('trackTitle').textContent=S.mode==='pacifist'?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
+  document.getElementById('trackTitle').textContent=pacRules()?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
   let total=0;
-  if(S.mode==='pacifist'){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  if(S.mode==='draft'){ const row=document.createElement('div'); row.className='cards'; const pubOp=(S.pub&&S.pub[op])||[]; pubOp.forEach(t=>row.appendChild(cardEl(t,''))); const hidden=Math.max(0,S.hands[op].length-pubOp.length); for(let i=0;i<hidden;i++){ const b=document.createElement('div'); b.className='card back'; b.textContent='?'; row.appendChild(b); } const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op) row.appendChild(cardEl(t,'used',false)); }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  else if(S.mode==='pacifist'){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
   else for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
     const copies=S.copies||3; const left=Math.max(0,copies-known); total+=left;

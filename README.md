@@ -15,11 +15,11 @@ Chess, plus a deck of 15 spell cards. Play: https://nick-cio.github.io/spellches
 2. Make a normal chess move.
 
 ## The spells
-- **Jump** (green): pick any piece except a king. This turn it doesn't exist for you: your sliding pieces pass through it, and any of your pieces next to it may leap straight over it to the far side.
+- **Jump** (green): pick one of your pieces. This turn it may pass over one piece in its path (rooks, bishops, queens) or leap over an adjacent piece to the square beyond (any piece; pawns only forward).
 - **Rage** (red): one of your pieces, not a pawn, moves like a queen this turn. The king is allowed.
 - **Speed** (yellow): the piece you move this turn moves a second time right after. The second move cannot capture. The first move may pass through check as long as the second move gets you out.
 - **Earth** (brown): petrify any square except a king's. An empty square becomes a rock nothing can cross or land on. A piece there is locked in stone: it cannot move, be captured, or give check. Wears off at the start of your next turn.
-- **Parasite** (black): secretly infect any piece except a king, yours or theirs. For the next 3 opponent turns, whoever captures that piece switches to the other color. A king capturing it is immune. You see a 3-dot countdown above the piece; your opponent only sees that a Parasite was played.
+- **Parasite** (black): secretly infect any piece except a king, yours or theirs. It lies dormant for one turn, then awakens at the start of your next turn. For the next 3 opponent turns, whoever captures that piece switches to the other color. A king capturing it is immune. You see a countdown above the piece; your opponent only sees that a Parasite was played.
 
 ## Kings and winning
 - The king can never be captured. You win by checkmate, as in chess.
@@ -39,5 +39,11 @@ Same game, but spells can never take material, and you may cast up to 2 spells p
 - **Speed**: neither move may capture.
 - **Rage**: the raged piece may not capture.
 - **Earth**: may only be placed on an empty square or one of your own pieces.
-- **Jump**: a leap may not land on a piece, and a slider that passes through the jumped piece may not capture beyond it.
+- **Jump**: no capturing on the far side of the jump.
 - **Parasite**: unchanged.
+
+## Draft mode (experimental)
+Pacifist rules, but hands are built by a draft instead of being dealt.
+- Each player privately gets 3 pairs of different cards and keeps one from each pair. The other card of each pair goes to the opponent face up.
+- So everyone ends with 6 cards: 3 they chose (private) and 3 they were given (public to both). The opponent's public cards are shown; their private ones show as card backs.
+- No swap, no deck reveals.
