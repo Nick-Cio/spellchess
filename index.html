@@ -1571,7 +1571,7 @@ function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.child
   DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color);
     const k=i-2, off=(window.innerWidth<700?78:150)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
     c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s'; c.style.zIndex=i+1;
-    c.onmouseenter=()=>{ tip.style.setProperty('--spell',t==='parasite'?'#fff':SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
+    c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
     c.onmouseleave=()=>{ tip.textContent=''; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
     c.onclick=()=>{ document.getElementById('homeTut').click(); setTimeout(()=>{ const el=document.querySelector(`.tdemo[data-demo="${t}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },50); };
     fan.appendChild(c); }); }
