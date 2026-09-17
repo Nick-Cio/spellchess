@@ -12,7 +12,7 @@
   --lt:#d9d9d9; --dk:#7f7b78; --coord:#8a8784;
   --sel:rgba(255,214,0,.55); --last:rgba(120,180,255,.35);
   --jump:#2f9e4e; --rage:#d23a2a; --speed:#f2c531; --earth:#7a4f2b;
-  --sq:calc(min(100vh - 150px, 100vw - 460px) / 8);
+  --sq:calc(min(100vh - 150px, 100vw - 560px) / 8);
 }
 
 *{box-sizing:border-box}
@@ -25,7 +25,7 @@ h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-sp
 .top{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:8px}
 h1{text-shadow:0 3px 0 #000}
 .hero-title.mini{font-size:26px;letter-spacing:.06em;line-height:1;animation:none;text-shadow:0 3px 0 #000}
-.hero-title.mini span{animation:shimmer 9s linear infinite}
+.hero-title.mini span{animation:shimmer 45s linear infinite}
 .top .sub{color:var(--muted)}
 .wrap{display:flex;gap:22px;align-items:flex-start;flex:1;min-height:0}
 .boardcol{display:flex;flex-direction:column;gap:6px;flex:none}
@@ -150,9 +150,11 @@ button{font:inherit;font-weight:500;padding:6px 12px;border:1px solid var(--line
 button:hover{border-color:var(--ink)} button:focus-visible{outline:2px solid var(--speed);outline-offset:2px}
 button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
-.side{display:grid;grid-template-columns:1fr;grid-auto-rows:min-content;gap:12px;flex:none;width:380px;min-width:0;max-height:100%;overflow:auto;padding-top:36px}
+.side{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:min-content;gap:12px;flex:none;width:480px;min-width:0;max-height:100%;overflow:auto;padding-top:36px;align-items:start}
+.side.phase-setup{grid-template-columns:1fr}
+.side.phase-setup .block{grid-column:1}
 .side .wide{grid-column:1/-1}
-#handBlock{grid-column:1}
+#handBlock{grid-column:1} #trackBlock{grid-column:2}
 #settingsBlock,#onlineBlock{position:fixed;top:52px;right:16px;z-index:30;width:300px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
 .pill{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:999px}
 .pill.on{background:var(--jump);color:#fff;border-color:var(--jump)}
@@ -173,9 +175,9 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .block h2 .n{color:var(--ink)}
 .cards{display:flex;gap:10px;flex-wrap:wrap;min-height:40px}
 .pair{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px dashed var(--line);border-radius:6px}
-.pair.big{gap:18px;padding:22px 20px;position:relative;margin-top:10px}
-.pair.big .card{width:132px;height:184px;font-size:18px}
-.pair.big .card .art{width:92px;height:92px;margin-top:12px}
+.pair.big{gap:16px;padding:22px 18px;position:relative;margin-top:10px;justify-content:center}
+.pair.big .card{width:150px;height:210px;font-size:20px}
+.pair.big .card .art{width:104px;height:104px;margin-top:14px}
 .pair.big .pairvs{font-size:16px}
 .pairlbl{position:absolute;top:-9px;left:12px;background:var(--panel);padding:0 6px;font-family:Sora,sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .card.dealin{animation:dealin .55s cubic-bezier(.2,.8,.2,1) both}
@@ -295,6 +297,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .hero-title{font-family:Sora,sans-serif;font-weight:700;font-size:clamp(56px,11vw,140px);letter-spacing:.06em;line-height:.95;margin:0;color:#fff;text-shadow:0 8px 0 #000,0 0 40px rgba(255,255,255,.12);animation:rise 1s .1s ease-out both}
 .hero-title span{background:linear-gradient(90deg,#2f9e4e,#f2c531,#d23a2a,#7a4f2b,#2f9e4e);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;animation:shimmer 9s linear infinite,rise 1s .1s ease-out both}
 @keyframes shimmer{to{background-position:300% 0}}
+.hero-title span{animation-duration:30s}
 .hero-sub{color:#cfcac3;font-size:clamp(15px,2vw,20px);text-align:center;margin:14px 0 22px;line-height:1.45;animation:rise 1s .25s ease-out both}
 .home-actions{animation:rise 1s .4s ease-out both;margin-top:40px;margin-bottom:10px}
 .bigbtn.glowbtn{background:#fff;color:#0f0f0e;border-color:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.5);animation:btnpulse 2.4s ease-out infinite}
@@ -527,7 +530,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
     <div class="block" id="revBlock"><h2><span>Revealed from deck</span><span class="n" id="revN"></span></h2><div class="cards" id="revealed"></div>
       <div class="deckrow" style="margin-top:10px"><span>Deck <b id="deckN"></b></span><span>Next reveal in <b id="nextRev"></b> moves</span></div></div>
     <div class="block" id="discBlock"><h2><span>Discard</span><span class="n" id="discN"></span></h2><div class="cards" id="discard" style="min-height:0"></div></div>
-    <div class="block wide"><h2><span id="trackTitle">Opponent could hold</span><span class="n" id="trackN"></span></h2><div class="track" id="track"></div></div>
+    <div class="block" id="trackBlock"><h2><span id="trackTitle">Opponent could hold</span><span class="n" id="trackN"></span></h2><div class="track" id="track"></div></div>
     <div class="block" id="settingsBlock" hidden><h2>Settings</h2>
       <div class="settings">
         <label for="sHand">Cards dealt to each player</label><input id="sHand" type="number" min="0" max="6" value="3">
@@ -1372,6 +1375,7 @@ function render(){
   const st=document.getElementById('status'), hint=document.getElementById('hint');
   if(S.phase==='play' && !S.snapCur && !S.spell && !S.lastMove && !S.over){ try{ S.snapCur=turnSnap(); }catch(e){} }
   showEnd(); renderClocks(); renderBars(); checkAwaken(view);
+  document.querySelector('.side').classList.toggle('phase-setup', inMulligan()||inDraft());
   document.getElementById('modeTag').hidden=!pacRules(); document.getElementById('modeTag').textContent=S.mode==='draft'?'Draft':'Original';
   document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
