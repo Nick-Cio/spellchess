@@ -742,7 +742,7 @@ function gen(S,from,atk){ const noCastle=!!atk;
   const jumper=S.jumper===from && !atk;
   const slide=(dirs)=>{ for(const [df,dr] of dirs){ let ff=f+df, rr=r+dr, via=false; while(inb(ff,rr)){ const to=rr*8+ff; const q=v(to);
       if(landable(to)) push(to,via?{viaPhase:true}:undefined);
-      if(!passable(to)){ if(jumper && !via && q && q.c!=='x'){ via=true; ff+=df; rr+=dr; continue; } break; }
+      if(!passable(to)){ if(jumper && !via && q){ via=true; ff+=df; rr+=dr; continue; } break; }
       ff+=df; rr+=dr; } } };
   const ROOK=[[1,0],[-1,0],[0,1],[0,-1]], BISH=[[1,1],[1,-1],[-1,1],[-1,-1]];
   if(t==='p'){
@@ -769,7 +769,7 @@ function gen(S,from,atk){ const noCastle=!!atk;
   // Jump: the jumping piece may leap straight over an adjacent piece (pawns only forward)
   if(jumper && p.t!=='x'){
     const dirs=p.t==='p'?[[-1,c==='w'?1:-1],[0,c==='w'?1:-1],[1,c==='w'?1:-1]]:ROOK.concat(BISH);
-    for(const [df,dr] of dirs){ const mf=f+df, mr=r+dr, lf=f+2*df, lr=r+2*dr; if(!inb(mf,mr)||!inb(lf,lr)) continue; const mid=v(mr*8+mf); if(!mid||mid.c==='x') continue; const to=lr*8+lf; if(landable(to) && !out.some(m=>m.to===to)) push(to,{leap:true,promo:p.t==='p'&&(lr===7||lr===0)}); }
+    for(const [df,dr] of dirs){ const mf=f+df, mr=r+dr, lf=f+2*df, lr=r+2*dr; if(!inb(mf,mr)||!inb(lf,lr)) continue; const mid=v(mr*8+mf); if(!mid) continue; const to=lr*8+lf; if(landable(to) && !out.some(m=>m.to===to)) push(to,{leap:true,promo:p.t==='p'&&(lr===7||lr===0)}); }
   }
   return out;
 }
@@ -806,8 +806,8 @@ function applyMove(S,m,opt){
 function safeAfter(T){ const k=kingSq(T,T.turn); return k<0 || !attacked(T,k,other(T.turn)); }
 function legal(S,from){
   const p=view(S)(from); if(!p||p.c!==S.turn) return [];
-  const speedFirst=S.spell&&S.spell.type==='speed'&&S.spell.stage===0;
-  const speedSecond=S.spell&&S.spell.type==='speed'&&S.spell.stage===1;
+  const speedFirst=S.spell&&S.spell.type==='speed'&&S.spell.stage<(S.spell.moves||2)-1;
+  const speedSecond=S.spell&&S.spell.type==='speed'&&S.spell.stage>0;
   const noCap=m=>!(view(S)(m.to)||m.ep);
   const pac=pacRules();
   return gen(S,from).filter(m=>{
@@ -885,8 +885,8 @@ function doMove(m){
   { const L={k:'K',q:'Q',r:'R',b:'B',n:'N',p:''}[p.t]; const txt=m.castle?(m.castle==='k'?'O-O':'O-O-O'):(L+(cap?(p.t==='p'?FILES[m.from%8]:'')+'x':'')+sqName(m.to)+(m.promoTo?'='+m.promoTo.toUpperCase():(m.promo?'=Q':''))); (S.turnMoves||(S.turnMoves=[])).push(txt); }
   log(`${S.moveNo}${S.turn==='w'?'.':'...'} ${gl} ${sqName(m.from)}${cap?'x':'-'}${sqName(m.to)}${m.castle?' castles':''}${m.promo?'=Q':''}`, true);
   if(S.flipped){ log(`${sqName(m.to)} switches sides.`,true); flipSq=m.to; flipT0=Date.now(); setTimeout(()=>{ if(flipSq===m.to){ flipSq=-1; render(); } },900); }
-  if(S.spell&&S.spell.type==='speed'&&S.spell.stage===0&&!S.flipped){
-    S.spell.stage=1; S.speedSq=m.to; S.sel=m.to;
+  if(S.spell&&S.spell.type==='speed'&&S.spell.stage<(S.spell.moves||2)-1&&!S.flipped){
+    S.spell.stage++; S.speedSq=m.to; S.sel=m.to;
     if(!legal(S,m.to).length){ log('Speed: no second move available.'); endTurn(); }
   } else endTurn();
   render(); commit();
@@ -894,7 +894,7 @@ function doMove(m){
 function cast(idx){
   if(!canAct()) return;
   const type=S.hands[S.turn][idx];
-  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); (S.turnSpells||(S.turnSpells=[])).push({t:'speed'}); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
+  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); if(S.spell&&S.spell.type==='speed') S.spell.moves=(S.spell.moves||2)+1; else S.spell={type,stage:0,moves:2}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); (S.turnSpells||(S.turnSpells=[])).push({t:'speed'}); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
   S.pending={type,idx}; S.sel=-1; render();
 }
 function pubPlayed(type){ if(!S.pub||!S.pub[S.turn]) return; const i=S.pub[S.turn].indexOf(type); if(i>=0) S.pub[S.turn].splice(i,1); }
