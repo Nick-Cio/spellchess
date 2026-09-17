@@ -323,7 +323,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
     <h1 class="hero-title">SPELL<span>CHESS</span></h1>
     <div class="home-actions"><button class="bigbtn glowbtn" id="homePlay">Play</button><button class="bigbtn ghost" id="homeTut">Tutorial</button></div>
     <div class="arc" id="fan"></div>
-    <div class="hero-foot" id="fanTip">Hover a card</div>
+    <div class="hero-foot" id="fanTip"></div>
   </div>
 </div>
 <div class="screen" id="playScreen" hidden>
@@ -1444,7 +1444,7 @@ function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.child
     const k=i-2, off=(window.innerWidth<700?78:130)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
     c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s'; c.style.zIndex=i+1;
     c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].tipPac||SPELLS[t].tip}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
-    c.onmouseleave=()=>{ tip.textContent='Hover a card'; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
+    c.onmouseleave=()=>{ tip.textContent=''; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
     c.onclick=()=>{ document.getElementById('homeTut').click(); demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); };
     fan.appendChild(c); }); }
 function demoStop(){ clearTimeout(demoTimer); demoTimer=null; }
