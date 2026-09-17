@@ -970,6 +970,8 @@ function rebuild(){
   S=ns; online.ver=st.ver||0;
   if(S.discard.length>prevDisc && st.lastBy!==uid) castFx(S.discard[S.discard.length-1]);
   online.loaded=true;
+  if(online.resuming){ online.resuming=false; if(S.over){ leaveOnline(true); try{ localStorage.removeItem('spellchess_game'); }catch(e){} newGame(); renderOnline(); showScreen('home'); return; } hideScreens(); }
+  if(S.over){ try{ localStorage.removeItem('spellchess_game'); }catch(e){} }
   mulliganStep(); draftStep();
   if(S.needEval && online.seat===S.turn && !S.over){ evaluateTurnStart(); render(); renderOnline(); commit(); return; }
   render(); renderOnline();
@@ -1451,7 +1453,7 @@ function demoStop(){ clearTimeout(demoTimer); demoTimer=null; }
 function start(data){
   newGame(); initFirebase();
   let saved=null; try{ saved=localStorage.getItem('spellchess_game'); }catch(e){}
-  if(saved && fbReady){ showScreen('home'); fbReady.then(async ok=>{ if(ok){ await joinOnline(saved); if(online) hideScreens(); } }); }
+  if(saved && fbReady){ showScreen('home'); fbReady.then(async ok=>{ if(ok){ await joinOnline(saved); if(online){ online.resuming=true; } } }); }
   else showScreen('home');
 }
 window.claude?.hot?.snapshot?.(()=>({S,history}));
