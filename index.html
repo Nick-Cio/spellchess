@@ -168,6 +168,18 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .block h2 .n{color:var(--ink)}
 .cards{display:flex;gap:10px;flex-wrap:wrap;min-height:40px}
 .pair{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px dashed var(--line);border-radius:6px}
+.pair.big{gap:16px;padding:14px 18px;position:relative;margin-top:6px}
+.pairlbl{position:absolute;top:-9px;left:12px;background:var(--panel);padding:0 6px;font-family:Sora,sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card.dealin{animation:dealin .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dealin{0%{transform:translateY(40px) rotateY(90deg);opacity:0}60%{opacity:1}100%{transform:translateY(0) rotateY(0);opacity:1}}
+#draftfx{position:fixed;inset:0;z-index:55;pointer-events:none;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(47,158,78,.45),rgba(0,0,0,.85) 70%);animation:dfxbg 2.4s ease-out forwards}
+#draftfx .dtitle{position:absolute;font-family:Sora,sans-serif;font-weight:700;font-size:clamp(48px,12vmin,120px);letter-spacing:.3em;color:#fff;text-shadow:0 0 30px rgba(47,158,78,.9),0 4px 0 #000;animation:dtitle 2.4s ease-out forwards}
+#draftfx .dcard{position:absolute;width:min(18vmin,120px);height:min(25vmin,168px);border:3px solid #000;border-radius:8px;display:flex;align-items:center;justify-content:center;animation:dcard 2.4s cubic-bezier(.2,.8,.2,1) forwards;box-shadow:0 14px 40px rgba(0,0,0,.6)}
+#draftfx .dcard svg{width:70%;height:70%;shape-rendering:crispEdges}
+@keyframes dfxbg{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}
+@keyframes dtitle{0%{transform:scale(.5) translateY(40px);opacity:0}20%{transform:scale(1.05) translateY(0);opacity:1}75%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}
+@keyframes dcard{0%{transform:translate(0,60vh) rotate(0) scale(.6);opacity:0}35%{opacity:1}55%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(1)}80%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(1);opacity:1}100%{transform:translate(var(--dx),calc(var(--dy) - 30px)) rotate(var(--rot)) scale(1.05);opacity:0}}
+@media (prefers-reduced-motion: reduce){ #draftfx{display:none} .card.dealin{animation:none} }
 .pairvs{font-family:Sora,sans-serif;font-size:11px;color:var(--muted);text-transform:uppercase}
 .card{position:relative;width:96px;height:134px;border:2px solid #000;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 6px 8px;font-family:Sora,sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.05em;cursor:default}
 .card .art{width:64px;height:64px;margin-top:8px}
@@ -246,6 +258,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 <div id="tip" hidden></div>
 <div id="promo" class="promo" hidden></div>
 <div id="endfx" hidden><div class="endbox"><div class="endtitle" id="endTitle"></div><div class="endsub" id="endSub"></div><button id="endClose">Close</button></div></div>
+<div id="draftfx" hidden></div>
 <div id="castfx" hidden><div class="fxwash"></div><div class="fxicon"></div><div class="fxname"></div></div>
 <script>
 const SPELLS={
@@ -896,6 +909,21 @@ function checkAwaken(viewSide){
   if(awakeShown.has(key)) return; awakeShown.add(key);
   awakenFx(S.awakened);
 }
+let draftRoundT0={round:-1,t:0}, draftIntroShown=null;
+function draftIntro(){
+  const fx=document.getElementById('draftfx'); if(!fx) return;
+  const types=['jump','rage','speed','earth','parasite'];
+  fx.innerHTML=types.map((t,i)=>{ const sp=SPELLS[t]; const dx=(i-2)*22, dy=-8, rot=(i-2)*9; return `<div class="dcard" style="background:${sp.color};--dx:${dx}vmin;--dy:${dy}vmin;--rot:${rot}deg;animation-delay:${i*90}ms">${pixSvg(t,sp.ink)}</div>`; }).join('')+'<div class="dtitle">DRAFT</div>';
+  fx.hidden=true; void fx.offsetWidth; fx.hidden=false;
+  clearTimeout(draftIntro.t); draftIntro.t=setTimeout(()=>{ fx.hidden=true; },2500);
+}
+function checkDraftIntro(){
+  if(!S||S.phase!=='draft') { draftIntroShown=null; return; }
+  const ds=draftSeat(); if(!ds||(S.draft[ds]&&S.draft[ds].done)) return;
+  const key=ds+':'+(S.draft[ds]&&S.draft[ds].offers?S.draft[ds].offers.map(p=>p.join('')).join('|'):'');
+  if(!key.includes('|')) return;
+  if(draftIntroShown===key) return; draftIntroShown=key; draftIntro();
+}
 function castFx(type){
   const fx=document.getElementById('castfx'); const sp=SPELLS[type];
   fx.style.setProperty('--spell',sp.color);
@@ -1025,7 +1053,7 @@ function render(){
   }
   // status
   const st=document.getElementById('status'), hint=document.getElementById('hint');
-  showEnd(); renderClocks(); renderBars(); checkAwaken(view);
+  showEnd(); renderClocks(); renderBars(); checkAwaken(view); checkDraftIntro();
   document.getElementById('modeTag').hidden=!pacRules(); document.getElementById('modeTag').textContent=S.mode==='draft'?'Draft':'Pacifist';
   document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
@@ -1035,10 +1063,17 @@ function render(){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
       S.draftSel=S.draftSel||[-1,-1,-1];
-      d.offers.forEach((pr,i)=>{ const g=document.createElement('div'); g.className='pair'; pr.forEach((t,j)=>{ const c=cardEl(t, S.draftSel[i]===j?'armed':'playable'); c.onclick=()=>{ S.draftSel[i]=j; render(); }; g.appendChild(c); }); const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[1]); hand.appendChild(g); });
-      const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
-      const ok=S.draftSel.every(x=>x>=0);
-      const b=document.createElement('button'); b.className='primary'; b.textContent=ok?'Confirm draft':'Pick one from each pair'; b.disabled=!ok; b.onclick=()=>doDraft(me,S.draftSel.slice()); row.appendChild(b); hand.appendChild(row);
+      const round=S.draftSel.findIndex(x=>x<0); const r=round<0?2:round;
+      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Date.now()}; }
+      const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
+      for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'); kept.appendChild(c); }
+      if(r>0) hand.appendChild(kept);
+      const g=document.createElement('div'); g.className='pair big';
+      const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
+      const pr=d.offers[r];
+      pr.forEach((t,j)=>{ const c=cardEl(t,'playable dealin'); c.style.animationDelay=(-(Date.now()-draftRoundT0.t)+j*180)+'ms'; c.onclick=()=>{ if(S.draftSel[r]>=0) return; S.draftSel[r]=j; if(S.draftSel.every(x=>x>=0)){ const picks=S.draftSel.slice(); S.draftSel=null; doDraft(me,picks); } else render(); }; g.appendChild(c); });
+      const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[2]);
+      hand.appendChild(g);
     } else {
       const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
@@ -1052,10 +1087,17 @@ function render(){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
       S.draftSel=S.draftSel||[-1,-1,-1];
-      d.offers.forEach((pr,i)=>{ const g=document.createElement('div'); g.className='pair'; pr.forEach((t,j)=>{ const c=cardEl(t, S.draftSel[i]===j?'armed':'playable'); c.onclick=()=>{ S.draftSel[i]=j; render(); }; g.appendChild(c); }); const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[1]); hand.appendChild(g); });
-      const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
-      const ok=S.draftSel.every(x=>x>=0);
-      const b=document.createElement('button'); b.className='primary'; b.textContent=ok?'Confirm draft':'Pick one from each pair'; b.disabled=!ok; b.onclick=()=>doDraft(me,S.draftSel.slice()); row.appendChild(b); hand.appendChild(row);
+      const round=S.draftSel.findIndex(x=>x<0); const r=round<0?2:round;
+      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Date.now()}; }
+      const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
+      for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'); kept.appendChild(c); }
+      if(r>0) hand.appendChild(kept);
+      const g=document.createElement('div'); g.className='pair big';
+      const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
+      const pr=d.offers[r];
+      pr.forEach((t,j)=>{ const c=cardEl(t,'playable dealin'); c.style.animationDelay=(-(Date.now()-draftRoundT0.t)+j*180)+'ms'; c.onclick=()=>{ if(S.draftSel[r]>=0) return; S.draftSel[r]=j; if(S.draftSel.every(x=>x>=0)){ const picks=S.draftSel.slice(); S.draftSel=null; doDraft(me,picks); } else render(); }; g.appendChild(c); });
+      const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[2]);
+      hand.appendChild(g);
     } else {
       const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
@@ -1083,10 +1125,17 @@ function render(){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
       S.draftSel=S.draftSel||[-1,-1,-1];
-      d.offers.forEach((pr,i)=>{ const g=document.createElement('div'); g.className='pair'; pr.forEach((t,j)=>{ const c=cardEl(t, S.draftSel[i]===j?'armed':'playable'); c.onclick=()=>{ S.draftSel[i]=j; render(); }; g.appendChild(c); }); const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[1]); hand.appendChild(g); });
-      const row=document.createElement('div'); row.className='online-row'; row.style.width='100%';
-      const ok=S.draftSel.every(x=>x>=0);
-      const b=document.createElement('button'); b.className='primary'; b.textContent=ok?'Confirm draft':'Pick one from each pair'; b.disabled=!ok; b.onclick=()=>doDraft(me,S.draftSel.slice()); row.appendChild(b); hand.appendChild(row);
+      const round=S.draftSel.findIndex(x=>x<0); const r=round<0?2:round;
+      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Date.now()}; }
+      const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
+      for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'); kept.appendChild(c); }
+      if(r>0) hand.appendChild(kept);
+      const g=document.createElement('div'); g.className='pair big';
+      const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
+      const pr=d.offers[r];
+      pr.forEach((t,j)=>{ const c=cardEl(t,'playable dealin'); c.style.animationDelay=(-(Date.now()-draftRoundT0.t)+j*180)+'ms'; c.onclick=()=>{ if(S.draftSel[r]>=0) return; S.draftSel[r]=j; if(S.draftSel.every(x=>x>=0)){ const picks=S.draftSel.slice(); S.draftSel=null; doDraft(me,picks); } else render(); }; g.appendChild(c); });
+      const vs=document.createElement('span'); vs.className='pairvs'; vs.textContent='or'; g.insertBefore(vs,g.children[2]);
+      hand.appendChild(g);
     } else {
       const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
