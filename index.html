@@ -1497,7 +1497,7 @@ class Demo{
       board(c,r){ cols=c; rows=r; board=document.createElement('div'); board.className='dboard'; board.style.gridTemplateColumns=`repeat(${c},var(--sq))`; board.style.gridTemplateRows=`repeat(${r},var(--sq))`;
         for(let rr=r-1;rr>=0;rr--) for(let ff=0;ff<c;ff++){ const d=document.createElement('div'); d.className='cell '+(((rr+ff)%2)?'lt':'dk'); board.appendChild(d); }
         self.el.appendChild(board); sq=parseFloat(getComputedStyle(board).getPropertyValue('--sq'))||56; cap=document.createElement('div'); cap.className='dcap'; self.el.appendChild(cap); return board; },
-      cap(type,text){ if(!cap){ cap=document.createElement('div'); cap.className='dcap'; self.el.appendChild(cap);} cap.style.setProperty('--spell',type?SPELLS[type].color:'#fff'); cap.innerHTML=type?`<b>${SPELLS[type].name}</b> · ${text}`:text; },
+      cap(type,text){ if(!cap){ cap=document.createElement('div'); cap.className='dcap'; self.el.appendChild(cap);} cap.style.setProperty('--spell',type?(type==='parasite'?'#fff':SPELLS[type].color):'#fff'); cap.innerHTML=type?`<b>${SPELLS[type].name}</b> · ${text}`:text; },
       piece(id,c,t,f,r){ const w=document.createElement('div'); w.className='sq piece'; w.style.transform=pos(f,r); const sp=document.createElement('span'); sp.className='pc '+c; sp.textContent=GLYPH.b[t]+'︎'; w.appendChild(sp); board.appendChild(w); pieces[id]={el:w,f,r,c,t}; return w; },
       fx(id,cls,on=true){ const p=pieces[id]; if(p) p.el.classList.toggle(cls,on); },
       async move(id,f,r,opt={}){ guard(); const p=pieces[id]; const from=pos(p.f,p.r), to=pos(f,r); const ms=opt.ms||520;
@@ -1571,7 +1571,7 @@ function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.child
   DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color);
     const k=i-2, off=(window.innerWidth<700?78:150)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
     c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s'; c.style.zIndex=i+1;
-    c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
+    c.onmouseenter=()=>{ tip.style.setProperty('--spell',t==='parasite'?'#fff':SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
     c.onmouseleave=()=>{ tip.textContent=''; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
     c.onclick=()=>{ document.getElementById('homeTut').click(); setTimeout(()=>{ const el=document.querySelector(`.tdemo[data-demo="${t}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },50); };
     fan.appendChild(c); }); }
