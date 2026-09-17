@@ -397,11 +397,11 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 <div id="castfx" hidden><div class="fxwash"></div><div class="fxicon"></div><div class="fxname"></div></div>
 <script>
 const SPELLS={
-  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Your piece may jump over one piece this turn.',tipPac:'Jump over one piece. No capture.'},
-  rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.',tipPac:'Move like a queen. No capture.'},
-  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.',tipPac:'Move twice. No capture.'},
-  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.',tipPac:'Petrify an empty square or your piece.'},
-  parasite:{name:'Parasite',color:'#141414',ink:'#fff',tip:'Infect a piece. Its captor switches sides.',tipPac:'Infect a piece. Its captor switches sides.'},
+  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',blurb:'Jump over one piece.',tip:'Your piece may jump over one piece this turn.',tipPac:'Jump over one piece. No capture.'},
+  rage:{name:'Rage',color:'#d23a2a',ink:'#fff',blurb:'Move like a queen.',tip:'A non-pawn piece (king included) moves as a queen this turn.',tipPac:'Move like a queen. No capture.'},
+  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',blurb:'Move twice.',tip:'Move the same piece twice. No capture on the second move.',tipPac:'Move twice. No capture.'},
+  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',blurb:'Turn a square to stone.',tip:'Petrify any square: nothing moves in, out, or through until your next turn.',tipPac:'Petrify an empty square or your piece.'},
+  parasite:{name:'Parasite',color:'#141414',ink:'#fff',blurb:'Infect a piece. Its captor switches sides.',tip:'Infect a piece. Its captor switches sides.',tipPac:'Infect a piece. Its captor switches sides.'},
 };
 const PIX={
 speed:[
@@ -1445,7 +1445,7 @@ function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.child
   DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color);
     const k=i-2, off=(window.innerWidth<700?78:130)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
     c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s'; c.style.zIndex=i+1;
-    c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].tipPac||SPELLS[t].tip}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
+    c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
     c.onmouseleave=()=>{ tip.textContent=''; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
     c.onclick=()=>{ document.getElementById('homeTut').click(); demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); };
     fan.appendChild(c); }); }
