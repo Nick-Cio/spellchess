@@ -1402,7 +1402,7 @@ function render(){
   document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
-    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?(ds?(S.draft[ds].done?'Waiting…':''):''):`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}`; }
+    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?'':`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}`; }
     else if(inDraft()){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
@@ -1431,11 +1431,10 @@ function render(){
       hand.appendChild(g);
       }
     } else {
-      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Waiting…':''; hand.appendChild(n);
-      if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
+      if(d&&d.done&&Array.isArray(S.hands[me])){ const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0'; S.hands[me].forEach(t=>{ if(t!=='?') kept.appendChild(cardEl(t,'sm')); }); hand.appendChild(kept); }
     }
   }
-  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting…':''):''):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
+  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?'':`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
     else st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
     if(inDraft()){ const ds=draftSeat(); h=''; }
@@ -1467,8 +1466,7 @@ function render(){
       hand.appendChild(g);
       }
     } else {
-      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Waiting…':''; hand.appendChild(n);
-      if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
+      if(d&&d.done&&Array.isArray(S.hands[me])){ const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0'; S.hands[me].forEach(t=>{ if(t!=='?') kept.appendChild(cardEl(t,'sm')); }); hand.appendChild(kept); }
     }
   }
   else if(inMulligan()){ const ms=mullSeat(); h=''; }
@@ -1524,8 +1522,7 @@ function render(){
       hand.appendChild(g);
       }
     } else {
-      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Waiting…':''; hand.appendChild(n);
-      if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
+      if(d&&d.done&&Array.isArray(S.hands[me])){ const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0'; S.hands[me].forEach(t=>{ if(t!=='?') kept.appendChild(cardEl(t,'sm')); }); hand.appendChild(kept); }
     }
   }
   else if(inMulligan()){
@@ -1558,7 +1555,7 @@ function render(){
   const tr=document.getElementById('track'); tr.innerHTML='';
   document.getElementById('trackTitle').textContent=pacRules()?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
   let total=0;
-  if(S.mode==='draft' && S.phase==='draft'){ const row=document.createElement('div'); row.className='cards'; const pubOp=(S.pub&&S.pub[op])||[]; pubOp.forEach(t=>row.appendChild(cardEl(t,''))); const hidden=Math.max(0,S.hands[op].length-pubOp.length); for(let i=0;i<hidden;i++){ const b=document.createElement('div'); b.className='card back'; b.textContent='?'; row.appendChild(b); } const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op) row.appendChild(cardEl(t,'used',false)); }); tr.appendChild(row); }
+  if(S.mode==='draft' && S.phase==='draft'){ const row=document.createElement('div'); row.className='cards'; tr.appendChild(row); }
   else if(openHands()){ const row=document.createElement('div'); row.className='cards'; const dealing2=Date.now()-handDealT0<1600; S.hands[op].forEach((t,i)=>{ if(t!=='?'){ const c=cardEl(t,dealing2?'dealin':''); if(dealing2) c.style.animationDelay=(-(Date.now()-handDealT0)+300+i*90)+'ms'; row.appendChild(c); } }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); tr.appendChild(row); }
   else for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
