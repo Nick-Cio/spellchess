@@ -152,7 +152,16 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
 .side{display:grid;grid-template-columns:1fr;grid-auto-rows:min-content;gap:12px;flex:none;width:680px;min-width:0;max-height:100%;overflow:auto;padding-top:36px;align-items:start}
 .side .wide{grid-column:1/-1}
-#handBlock,#trackBlock{grid-column:1}
+#handBlock,#trackBlock,#movesBlock{grid-column:1}
+.moves{display:grid;grid-template-columns:34px 1fr 1fr;font-family:'IBM Plex Mono',monospace;font-size:13px;max-height:220px;overflow:auto;row-gap:2px}
+.moves .num{color:var(--muted);padding:3px 0}
+.moves .ply{padding:3px 8px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--ink)}
+.moves .ply:hover{background:rgba(255,255,255,.06)}
+.moves .ply.cur{background:rgba(255,255,255,.14);outline:1px solid rgba(255,255,255,.25)}
+.moves .sp{display:inline-block;font-family:Sora,sans-serif;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid #000;color:#fff}
+.moves .sp.speed{color:#111}
+.moves .empty{grid-column:1/-1;color:var(--muted);font-family:'IBM Plex Sans',sans-serif}
+.board.review{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 #settingsBlock,#onlineBlock{position:fixed;top:52px;right:16px;z-index:30;width:300px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
 .pill{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:999px}
 .pill.on{background:var(--jump);color:#fff;border-color:var(--jump)}
@@ -523,11 +532,12 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
     </div>
   </div>
   <div class="side">
-    <div class="block" id="handBlock"><h2><span id="handTitle">Hand</span><span class="n" id="handN"></span></h2><div class="cards" id="hand"></div></div>
+    <div class="block" id="handBlock"><h2><span id="handTitle">Hand</span></h2><div class="cards" id="hand"></div></div>
     <div class="block" id="revBlock"><h2><span>Revealed from deck</span><span class="n" id="revN"></span></h2><div class="cards" id="revealed"></div>
       <div class="deckrow" style="margin-top:10px"><span>Deck <b id="deckN"></b></span><span>Next reveal in <b id="nextRev"></b> moves</span></div></div>
     <div class="block" id="discBlock"><h2><span>Discard</span><span class="n" id="discN"></span></h2><div class="cards" id="discard" style="min-height:0"></div></div>
     <div class="block" id="trackBlock"><h2><span id="trackTitle">Opponent could hold</span><span class="n" id="trackN"></span></h2><div class="track" id="track"></div></div>
+    <div class="block" id="movesBlock"><h2><span>Moves</span><span class="n" id="movesNav">&larr; &rarr; to review</span></h2><div class="moves" id="moves"></div></div>
     <div class="block" id="settingsBlock" hidden><h2>Settings</h2>
       <div class="settings">
         <label for="sHand">Cards dealt to each player</label><input id="sHand" type="number" min="0" max="6" value="3">
@@ -673,6 +683,8 @@ const NAMES={w:'White',b:'Black'};
 
 let S=null, history=[];
 
+function encBoard(b){ return b.map(q=>q?(q.c==='x'?(q.under?q.under.c.toUpperCase()+q.under.t:'xx'):q.c+q.t):'..').join(''); }
+function decBoard(enc){ const b=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); b.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } return b; }
 function startBoard(){
   const b=Array(64).fill(null);
   const back='rnbqkbnr';
@@ -703,7 +715,7 @@ function newGame(){
     revealEvery:every, moveNo:1, captured:{w:[],b:[]},
     clock:clockOn?{on:true,w:mins*60000,b:mins*60000,inc:incS*1000,lastTick:null,running:null}:{on:false},
     rocks:[], infected:{}, spell:null, phased:-1, raged:-1, speedSq:-1, pending:null,
-    sel:-1, lastMove:null, over:null, log:[], notice:''
+    sel:-1, lastMove:null, over:null, log:[], notice:'', hist:[{side:null,n:0,moves:[],spells:[],board:encBoard(startBoard()),last:null}], turnMoves:[], turnSpells:[]
   };
   history=[];
   log(`New game. ${hand} cards each, ${init} revealed, one more every ${every} moves.`);
@@ -823,6 +835,7 @@ function endTurn(){
   S.awakened=[];
   for(const k of Object.keys(S.infected||{})){ const r=S.infected[k]; const rec=typeof r==='string'?{by:r,left:3}:r; if(rec.by===S.turn){ if(rec.dormant){ rec.dormant=false; S.infected[k]=rec; S.awakened.push(+k); } else { rec.left--; if(rec.left<=0) delete S.infected[k]; else S.infected[k]=rec; } } }
   S.notice='';
+  { const prevSide=other(S.turn); (S.hist||(S.hist=[])).push({side:prevSide,n:prevSide==='w'?S.moveNo:S.moveNo-1,moves:S.turnMoves||[],spells:S.turnSpells||[],board:encBoard(S.board),last:S.lastMove}); S.turnMoves=[]; S.turnSpells=[]; }
   S.undoReq=null; S.snapPrev=S.snapCur||null; S.snapCur=turnSnap();
   if(S.hands[S.turn].includes('?')){ S.needEval=true; return; } // opponent's hand is hidden here; their client evaluates
   evaluateTurnStart();
@@ -864,6 +877,7 @@ function doMove(m){
   const p=S.board[m.from]; const cap=applyMove(S,m);
   S.lastMove=[m.from,m.to];
   const gl=GLYPH[p.c][p.t];
+  { const L={k:'K',q:'Q',r:'R',b:'B',n:'N',p:''}[p.t]; const txt=m.castle?(m.castle==='k'?'O-O':'O-O-O'):(L+(cap?(p.t==='p'?FILES[m.from%8]:'')+'x':'')+sqName(m.to)+(m.promoTo?'='+m.promoTo.toUpperCase():(m.promo?'=Q':''))); (S.turnMoves||(S.turnMoves=[])).push(txt); }
   log(`${S.moveNo}${S.turn==='w'?'.':'...'} ${gl} ${sqName(m.from)}${cap?'x':'-'}${sqName(m.to)}${m.castle?' castles':''}${m.promo?'=Q':''}`, true);
   if(S.flipped){ log(`${sqName(m.to)} switches sides.`,true); flipSq=m.to; flipT0=Date.now(); setTimeout(()=>{ if(flipSq===m.to){ flipSq=-1; render(); } },900); }
   if(S.spell&&S.spell.type==='speed'&&S.spell.stage===0&&!S.flipped){
@@ -875,7 +889,7 @@ function doMove(m){
 function cast(idx){
   if(!canAct()) return;
   const type=S.hands[S.turn][idx];
-  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
+  if(type==='speed'){ snapshot(); S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); S.spell={type,stage:0}; S.casts=(S.casts||0)+1; S.notice=''; S.sel=-1; castFx('speed'); log(`${NAMES[S.turn]} casts Speed.`,true); (S.turnSpells||(S.turnSpells=[])).push({t:'speed'}); afterCast(); render(); commit(); const b=document.getElementById('board'); b.style.setProperty('--spell',SPELLS.speed.color); b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),750); return; }
   S.pending={type,idx}; S.sel=-1; render();
 }
 function pubPlayed(type){ if(!S.pub||!S.pub[S.turn]) return; const i=S.pub[S.turn].indexOf(type); if(i>=0) S.pub[S.turn].splice(i,1); }
@@ -893,6 +907,7 @@ function pickTargets(){
 function resolveTarget(sq){
   snapshot();
   const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
+  (S.turnSpells||(S.turnSpells=[])).push({t:type,sq:type==='parasite'?null:sq});
   if(type==='jump'){ S.jumper=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
   if(type==='rage'){ S.raged=sq; log(`${NAMES[S.turn]} casts Rage on ${sqName(sq)}.`,true); }
   if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:1,dormant:true}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
@@ -1113,6 +1128,7 @@ function rebuild(){
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','discardBy','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
+  if(!Array.isArray(ns.hist)) ns.hist=[{side:null,n:0,moves:[],spells:[],board:ns.board?ns.board:encBoard(startBoard()),last:null}]; ns.hist=ns.hist.map(h=>Object.assign({moves:[],spells:[]},h,{moves:Array.isArray(h.moves)?h.moves:[],spells:Array.isArray(h.spells)?h.spells:[]})); ns.turnMoves=Array.isArray(ns.turnMoves)?ns.turnMoves:[]; ns.turnSpells=Array.isArray(ns.turnSpells)?ns.turnSpells:[];
   ns.undoReq=ns.undoReq||null; ns.undoAccepted=ns.undoAccepted||null; ns.snapCur=ns.snapCur||null; ns.snapPrev=ns.snapPrev||null;
   ns.mode=ns.mode||'classic'; ns.copies=ns.copies||3; ns.pub=ns.pub||{}; ns.pub.w=Array.isArray(ns.pub.w)?ns.pub.w:[]; ns.pub.b=Array.isArray(ns.pub.b)?ns.pub.b:[];
   if(ns.mode==='draft'){ ns.draft=ns.draft||{}; for(const sd of ['w','b']){ ns.draft[sd]=Object.assign({done:false,assembled:false},ns.draft[sd]||{}); } }
@@ -1167,6 +1183,7 @@ function askPromotion(m){
   box.querySelectorAll('button').forEach(b=>b.onclick=()=>{ box.hidden=true; m.promoTo=b.dataset.t; doMove(m); });
 }
 function clickSquare(sq){
+  if(viewPly!=null){ viewPly=null; render(); return; }
   if(S.over || !canAct()) return;
   if(S.pending){ if(pickTargets().includes(sq)) resolveTarget(sq); return; }
   const p=S.board[sq];
@@ -1248,7 +1265,7 @@ function castFx(type){
   clearTimeout(castFx.t); castFx.t=setTimeout(()=>{fx.hidden=true;},1150);
 }
 /* ---------- spell previews ---------- */
-let hoverSq=-1, flashSq=-1, flipSq=-1, rockDrop=-1, streak=[], streakT=null, flashT0=0, flipT0=0, rockT0=0, streakT0=0;
+let hoverSq=-1, flashSq=-1, flipSq=-1, rockDrop=-1, streak=[], streakT=null, flashT0=0, flipT0=0, rockT0=0, streakT0=0, viewPly=null;
 const since=t0=>(-(Date.now()-t0))+'ms';
 function pathSquares(a,b){
   const fa=a%8, ra=Math.floor(a/8), fb=b%8, rb=Math.floor(b/8);
@@ -1335,7 +1352,12 @@ function render(){
   const view=(inMulligan()&&!online)?(mullSeat()||S.turn):((inDraft()&&!online)?(draftSeat()||S.turn):(mySeat()||S.turn));
   const flip=online?(online.seat==='b'):(document.getElementById('sFlip').checked && S.turn==='b');
   const board=document.getElementById('board'); board.innerHTML='';
-  const legalMoves=(S.sel>=0&&!S.pending)?legal(S,S.sel):[];
+  const reviewing=viewPly!=null && S.hist && viewPly<S.hist.length-1;
+  if(!reviewing) viewPly=null;
+  const dispBoard=reviewing?decBoard(S.hist[viewPly].board):S.board;
+  const dispLast=reviewing?S.hist[viewPly].last:S.lastMove;
+  board.classList.toggle('review',!!reviewing);
+  const legalMoves=(S.sel>=0&&!S.pending&&!reviewing)?legal(S,S.sel):[];
   const targets=pickTargets(); const spellColor=S.pending?SPELLS[S.pending.type].color:(S.spell?SPELLS[S.spell.type].color:'');
   board.className='board'+(S.pending?' arm arm-'+S.pending.type:''); board.style.setProperty('--spell',spellColor||'transparent');
   const prev=[];
@@ -1343,7 +1365,7 @@ function render(){
   for(let row=0;row<8;row++) for(let col=0;col<8;col++){
     const r=flip?row:7-row, f=flip?7-col:col, sq=r*8+f;
     const d=document.createElement('div'); d.className='sq '+(((r+f)%2)?'lt':'dk');
-    if(S.lastMove&&S.lastMove.includes(sq)) d.classList.add('last');
+    if(dispLast&&dispLast.includes(sq)) d.classList.add('last');
     if(S.sel===sq) d.classList.add('sel');
     if(S.jumper===sq) d.classList.add('phased');
     if(S.raged===sq) d.classList.add('raged');
@@ -1358,10 +1380,10 @@ function render(){
     if(S.pending&&S.pending.type==='earth'&&sq===hoverSq&&targets.includes(sq)){ const k=document.createElement('div'); k.className='rock ghost'; k.innerHTML=ROCK_SVG; d.appendChild(k); }
     if(col===0){ const c=document.createElement('span'); c.className='coord r'; c.textContent=r+1; d.appendChild(c); }
     if(row===7){ const c=document.createElement('span'); c.className='coord f'; c.textContent=FILES[f]; d.appendChild(c); }
-    const p=S.board[sq];
+    const p=dispBoard[sq];
     if(p){ if(p.c==='x'){ if(p.under){ const s=document.createElement('span'); s.className='pc '+p.under.c+' encased'; s.textContent=GLYPH.b[p.under.t]+'\uFE0E'; d.appendChild(s); } const k=document.createElement('div'); k.className='rock'+(p.under?' encase':'')+(rockDrop===sq?' rise':''); k.innerHTML=ROCK_SVG+(rockDrop===sq?'<i class="dust"></i><i class="dust"></i><i class="dust"></i><i class="dust"></i>':''); if(rockDrop===sq){ k.querySelector('svg').style.animationDelay=since(rockT0); k.querySelectorAll('.dust').forEach(e=>e.style.animationDelay=since(rockT0)); d.classList.add('quake'); d.style.animationDelay=since(rockT0); } d.appendChild(k); }
       else { const s=document.createElement('span'); s.className='pc '+p.c; s.textContent=GLYPH.b[p.t]+'︎'; d.appendChild(s); }
-      if(p.c===S.turn && !S.over && !S.pending && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
+      if(p.c===S.turn && !S.over && !S.pending && !reviewing && (S.speedSq<0||S.speedSq===sq)) d.classList.add('tgt'); }
     const m=legalMoves.find(m=>m.to===sq);
     if(m){ d.classList.add('tgt'); const o=document.createElement('div'); o.className=(S.board[sq]||m.ep)?'ring':'dot'; d.appendChild(o); }
     d.onclick=()=>clickSquare(sq);
@@ -1467,7 +1489,6 @@ function render(){
   const me=view, op=other(me);
   const spectator=online&&!online.seat;
   document.getElementById('handTitle').textContent=(online&&!spectator)?'Your hand':`${NAMES[me]}'s hand`;
-  document.getElementById('handN').textContent=S.hands[me].length;
   const hand=document.getElementById('hand'); hand.innerHTML='';
   const canCast=!S.over && !S.pending && canAct() && (!S.spell || (pacRules() && (S.casts||0)<2)) && S.speedSq<0;
   if(spectator){ const n=document.createElement('div'); n.className='online-note'; n.textContent='Spectating. Hands are hidden.'; hand.appendChild(n); }
@@ -1544,6 +1565,14 @@ function render(){
     tr.appendChild(st);
   }
   document.getElementById('trackN').textContent='';
+  { const mv=document.getElementById('moves'); mv.innerHTML=''; const H=S.hist||[]; const live=H.length-1;
+    if(H.length<=1){ const e=document.createElement('div'); e.className='empty'; e.textContent='No moves yet'; mv.appendChild(e); }
+    const cell=(i)=>{ const h=H[i]; const d=document.createElement('div'); d.className='ply'+((viewPly==null?live:viewPly)===i?' cur':''); (h.spells||[]).forEach(sp=>{ const c=document.createElement('span'); c.className='sp '+sp.t; c.style.background=SPELLS[sp.t].color; c.textContent=SPELLS[sp.t].name+(sp.sq!=null?' '+sqName(sp.sq):''); d.appendChild(c); }); const t=document.createElement('span'); t.textContent=(h.moves||[]).join(', ')||'—'; d.appendChild(t); d.onclick=()=>{ viewPly=(i===live)?null:i; render(); }; return d; };
+    for(let i=1;i<H.length;i++){ const h=H[i];
+      if(h.side==='w'){ const n=document.createElement('div'); n.className='num'; n.textContent=h.n+'.'; mv.appendChild(n); }
+      else if(!H[i-1]||H[i-1].side!=='w'){ const n=document.createElement('div'); n.className='num'; n.textContent=h.n+'.'; mv.appendChild(n); mv.appendChild(document.createElement('div')); }
+      mv.appendChild(cell(i)); }
+    const cur=mv.querySelector('.ply.cur'); if(cur) cur.scrollIntoView({block:'nearest'}); }
   document.getElementById('deckN').textContent=S.deck.length;
   const rem=S.revealEvery>0?S.revealEvery-((S.moveNo-1)%S.revealEvery):0; document.getElementById('nextRev').textContent=(S.revealEvery>0&&S.deck.length>3)?rem:'—';
 }
@@ -1559,7 +1588,7 @@ document.getElementById('onlineBtn').onclick=()=>{ const b=document.getElementBy
 document.getElementById('homeBtn').onclick=()=>{ showScreen('home'); };
 renderOnline();
 document.getElementById('sFlip').onchange=render;
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); if(!S||!S.hist||document.activeElement&&/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return; const live=S.hist.length-1; if(e.key==='ArrowLeft'){ const cur=viewPly==null?live:viewPly; viewPly=Math.max(0,cur-1); render(); e.preventDefault(); } else if(e.key==='ArrowRight'){ if(viewPly==null) return; viewPly=Math.min(live,viewPly+1); if(viewPly===live) viewPly=null; render(); e.preventDefault(); } });
 
 
 /* ---------- home / play / tutorial screens ---------- */
