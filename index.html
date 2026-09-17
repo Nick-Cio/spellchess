@@ -270,6 +270,9 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .tut h2{font-family:Sora,sans-serif;font-size:18px;margin:22px 0 6px}
 .tut ul{padding-left:18px;margin:6px 0}
 .tut b.sp{padding:0 6px;border-radius:3px;color:#fff}
+.undobar{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--speed);border-radius:6px;background:rgba(242,197,49,.12);font-family:Sora,sans-serif;font-weight:600;font-size:13px;animation:undoblink 1.2s ease-in-out infinite}
+.undobar button{padding:3px 10px;font-size:12px}
+@keyframes undoblink{0%,100%{box-shadow:0 0 0 0 rgba(242,197,49,.5)}50%{box-shadow:0 0 0 6px rgba(242,197,49,0)}}
 .pill.home{margin-left:auto}
 .pill.home+.pill{margin-left:0}
 @media (max-width:700px){ .fan{height:190px} .fan .card{width:96px;height:134px;font-size:12px} .fan .card .art{width:60px;height:60px} .demo .board{--sq:44px} }
@@ -505,7 +508,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   </div>
 </div>
 </div>
-<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
+<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
@@ -515,7 +518,6 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
       <div class="pbar" id="barBot"></div><div class="clock" id="clkBot" hidden></div>
       <button id="undo">Undo</button>
       <button id="resign">Resign</button>
-      <button id="newgame" class="primary">New game</button>
     </div>
   </div>
   <div class="side">
@@ -819,9 +821,11 @@ function endTurn(){
   S.awakened=[];
   for(const k of Object.keys(S.infected||{})){ const r=S.infected[k]; const rec=typeof r==='string'?{by:r,left:3}:r; if(rec.by===S.turn){ if(rec.dormant){ rec.dormant=false; S.infected[k]=rec; S.awakened.push(+k); } else { rec.left--; if(rec.left<=0) delete S.infected[k]; else S.infected[k]=rec; } } }
   S.notice='';
+  S.undoReq=null; S.snapPrev=S.snapCur||null; S.snapCur=turnSnap();
   if(S.hands[S.turn].includes('?')){ S.needEval=true; return; } // opponent's hand is hidden here; their client evaluates
   evaluateTurnStart();
 }
+function turnSnap(){ const pub=(typeof pubState==='function')?pubState():JSON.parse(JSON.stringify(S)); delete pub.snapPrev; delete pub.snapCur; delete pub.undoReq; delete pub.undoAccepted; return JSON.stringify(pub); }
 function evaluateTurnStart(){
   S.needEval=false;
   const moves=allLegal(S);
@@ -1099,13 +1103,15 @@ function rebuild(){
   const st=online.state; const mine=online.seat;
   const openSt=st.mode==='pacifist' || (st.mode==='draft' && st.phase!=='draft');
   if(mine && online.hand===null && !openSt) return; // wait for our hand
-  const fresh=(st.ver||0)>(online.ver||0) || st.lastBy!==uid || !online.loaded;
+  const undoChanged=S && (JSON.stringify(st.undoReq||null)!==JSON.stringify(S.undoReq||null) || JSON.stringify(st.undoAccepted||null)!==JSON.stringify(S.undoAccepted||null));
+  const fresh=(st.ver||0)>(online.ver||0) || st.lastBy!==uid || !online.loaded || undoChanged;
   if(!fresh){ return; }
   const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
   const ns=JSON.parse(JSON.stringify(st)); ns.pending=null; ns.sel=-1;
   if(typeof ns.board==='string'){ const enc=ns.board; ns.board=[]; for(let i=0;i<64;i++){ const t=enc.substr(i*2,2); ns.board.push(t==='..'?null:(t==='xx'?{c:'x',t:'rock'}:(t[0]==='W'||t[0]==='B'?{c:'x',t:'rock',under:{c:t[0].toLowerCase(),t:t[1]}}:{c:t[0],t:t[1]}))); } }
   for(const k of ['rocks','revealed','discard','discardBy','deck','log']) if(!Array.isArray(ns[k])) ns[k]=[];
   ns.phase=ns.phase||'play'; ns.mull=ns.mull||{w:{done:true},b:{done:true}}; ns.mull.w=ns.mull.w||{done:false}; ns.mull.b=ns.mull.b||{done:false}; ns.mullSel=-1;
+  ns.undoReq=ns.undoReq||null; ns.undoAccepted=ns.undoAccepted||null; ns.snapCur=ns.snapCur||null; ns.snapPrev=ns.snapPrev||null;
   ns.mode=ns.mode||'classic'; ns.copies=ns.copies||3; ns.pub=ns.pub||{}; ns.pub.w=Array.isArray(ns.pub.w)?ns.pub.w:[]; ns.pub.b=Array.isArray(ns.pub.b)?ns.pub.b:[];
   if(ns.mode==='draft'){ ns.draft=ns.draft||{}; for(const sd of ['w','b']){ ns.draft[sd]=Object.assign({done:false,assembled:false},ns.draft[sd]||{}); } }
   ns.captured=ns.captured||{}; ns.captured.w=Array.isArray(ns.captured.w)?ns.captured.w:[]; ns.captured.b=Array.isArray(ns.captured.b)?ns.captured.b:[];
@@ -1117,6 +1123,12 @@ function rebuild(){
   else { ns.hands={w:Array(hc.w).fill('?'),b:Array(hc.b).fill('?')}; if(mine) ns.hands[mine]=(online.hand||[]).slice(); }
   if(ns.phase==='draft' && mine && ns.draft[mine] && !ns.draft[mine].done){ const off=(online.hand||[]); ns.draft[mine].offers=[[off[0],off[1]],[off[2],off[3]],[off[4],off[5]]].filter(pr=>pr[0]&&pr[1]); ns.hands[mine]=[]; if(S&&S.draftSel) ns.draftSel=S.draftSel; }
   S=ns; online.ver=st.ver||0;
+  if(online.seat){ if(S.turn===online.seat && online.lastTurn!==S.turn && !S.undoAccepted){ online.turnStartHand=S.hands[online.seat].slice(); } online.lastTurn=S.turn; }
+  if(S.undoAccepted && online.seat===S.undoAccepted.by && !openHands()){
+    const h=online.turnStartHand; const acc=S.undoAccepted; S.undoAccepted=null;
+    const upd={}; upd['games/'+online.code+'/state/undoAccepted']=null; if(h){ upd['games/'+online.code+'/hands/'+online.seat]=h.slice(); S.hands[online.seat]=h.slice(); }
+    firebase.database().ref().update(upd).catch(()=>{});
+  } else if(S.undoAccepted && online.seat===S.undoAccepted.by){ S.undoAccepted=null; firebase.database().ref('games/'+online.code+'/state/undoAccepted').remove(); }
   if(S.discard.length>prevDisc && st.lastBy!==uid) castFx(S.discard[S.discard.length-1]);
   online.loaded=true;
   if(online.resuming){ online.resuming=false; if(S.over){ leaveOnline(true); try{ localStorage.removeItem('spellchess_game'); }catch(e){} newGame(); renderOnline(); showScreen('home'); return; } hideScreens(); }
@@ -1164,7 +1176,29 @@ function clickSquare(sq){
   if(p && p.c===S.turn){ S.sel=(S.sel===sq)?-1:sq; } else S.sel=-1;
   render();
 }
-function undo(){ if(S.pending){ S.pending=null; render(); return; } if(online||!history.length) return; S=JSON.parse(history.pop()); S.sel=-1; render(); }
+function undo(){
+  if(S.pending){ S.pending=null; render(); return; }
+  if(S.over||inMulligan()||inDraft()) return;
+  if(!online){ if(!history.length) return; S=JSON.parse(history.pop()); S.sel=-1; render(); return; }
+  if(!online.seat||S.undoReq) return;
+  const kind=(S.turn===online.seat)?'cur':'prev';
+  if(kind==='cur' && !S.spell) return; // nothing to undo yet
+  if(kind==='prev' && !S.snapPrev) return;
+  S.undoReq={by:online.seat,kind,at:Date.now()};
+  firebase.database().ref('games/'+online.code+'/state/undoReq').set(S.undoReq).catch(e=>onlineNote('Undo request failed: '+fbErr(e),true));
+  render();
+}
+function answerUndo(accept){
+  if(!online||!S.undoReq) return; const req=S.undoReq;
+  if(!accept){ S.undoReq=null; firebase.database().ref('games/'+online.code+'/state/undoReq').remove(); render(); return; }
+  const snap=req.kind==='cur'?S.snapCur:S.snapPrev; if(!snap){ answerUndo(false); return; }
+  const st=JSON.parse(snap);
+  st.snapCur=req.kind==='cur'?S.snapCur:S.snapPrev; st.snapPrev=req.kind==='cur'?S.snapPrev:null;
+  st.undoReq=null; st.undoAccepted={by:req.by,kind:req.kind,at:Date.now()};
+  if(S.clock&&S.clock.on){ st.clock=Object.assign({},S.clock,{running:st.turn,lastTick:clockNow()}); }
+  online.ver=(online.ver||0)+1; st.ver=online.ver; st.lastBy=uid;
+  firebase.database().ref('games/'+online.code+'/state').set(st).catch(e=>onlineNote('Undo failed: '+fbErr(e),true));
+}
 function cancelSpell(){ if(S.pending){ S.pending=null; render(); } }
 function resign(){ if(S.over) return; if(online){ if(!online.seat) return; snapshot(); S.over={winner:other(online.seat),reason:'resignation'}; render(); commit(); return; } snapshot(); S.over={winner:other(S.turn),reason:'resignation'}; log(`${NAMES[S.turn]} resigns.`,true); render(); }
 
@@ -1337,7 +1371,7 @@ function render(){
   document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
-    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?(ds?(S.draft[ds].done?'Waiting for opponent':'Draft your spells'):'Players are drafting'):`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}: draft your spells`; }
+    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?(ds?(S.draft[ds].done?'Waiting for opponent':''):''):`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}`; }
     else if(inDraft()){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
@@ -1373,7 +1407,7 @@ function render(){
   else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
     else st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
-    if(inDraft()){ const ds=draftSeat(); h=(ds&&!S.draft[ds].done)?'Pick one card from each pair. The other goes to your opponent, face up.':'Waiting for the other player to draft.'; }
+    if(inDraft()){ const ds=draftSeat(); h=(ds&&!S.draft[ds].done)?'':'Waiting for the other player to draft.'; }
     else if(inDraft()){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
@@ -1415,7 +1449,15 @@ function render(){
     else h='';
     hint.textContent=h; hint.className='hint'+(warn?' warn':'');
   }
-  document.getElementById('undo').disabled=(!history.length&&!S.pending)||!!online;
+  const ub=document.getElementById('undoBar'); const ubtn=document.getElementById('undo');
+  if(online){
+    const me=online.seat; const req=S.undoReq;
+    if(req && me && req.by!==me){ ub.hidden=false; ub.innerHTML='Opponent asks to undo their turn <button id="undoYes">Accept</button><button id="undoNo">Decline</button>'; document.getElementById('undoYes').onclick=()=>answerUndo(true); document.getElementById('undoNo').onclick=()=>answerUndo(false); }
+    else if(req && me && req.by===me){ ub.hidden=false; ub.textContent='Undo requested… waiting for opponent'; }
+    else ub.hidden=true;
+    const canReq=!!me && !S.over && !req && !inMulligan() && !inDraft() && ((S.turn===me && !!S.spell) || (S.turn!==me && !!S.snapPrev));
+    ubtn.textContent='Request undo'; ubtn.disabled=!(canReq||S.pending);
+  } else { ub.hidden=true; ubtn.textContent='Undo'; ubtn.disabled=(!history.length&&!S.pending); }
   // hands
   const me=view, op=other(me);
   const spectator=online&&!online.seat;
@@ -1508,7 +1550,6 @@ document.getElementById('board').onmouseleave=()=>{ if(hoverSq>=0){ hoverSq=-1; 
 document.getElementById('gear').onclick=()=>{ const b=document.getElementById('settingsBlock'); b.hidden=!b.hidden; document.getElementById('onlineBlock').hidden=true; };
 document.getElementById('undo').onclick=undo;
 document.getElementById('resign').onclick=resign;
-document.getElementById('newgame').onclick=()=>{ if(online&&!online.seat) return; newGame(); if(online) commit({bothHands:true}); };
 document.getElementById('onlineBtn').onclick=()=>{ const b=document.getElementById('onlineBlock'); b.hidden=!b.hidden; document.getElementById('settingsBlock').hidden=true; };
 renderOnline();
 document.getElementById('sFlip').onchange=render;
