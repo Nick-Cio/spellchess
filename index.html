@@ -310,14 +310,14 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 @media (prefers-reduced-motion: reduce){ .bgboard,.glow,.arc .card,.hero-title span,.bigbtn.glowbtn{animation:none} }
 
 /* ===== tutorial ===== */
-.compare{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden;margin-top:6px;max-width:900px}
-.compare>div{background:rgba(15,15,14,.7);padding:12px 16px;font-size:15px;color:#e6e2dc}
-.compare .cmp-head{font-family:Sora,sans-serif;font-weight:700;font-size:20px;text-align:center;letter-spacing:.04em}
-.compare .cmp-head a{color:#fff;text-decoration:none}
-.compare .cmp-k{color:#a19d98;font-family:Sora,sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center}
-.compare .cmp-v{text-align:center}
-.compare .cmp-v.yes{color:#f2c531;font-weight:600} .compare .cmp-v.no{color:#2f9e4e;font-weight:600}
-@media (max-width:640px){ .compare{grid-template-columns:1fr 1fr} .compare .cmp-k{grid-column:1/-1;padding-bottom:4px} }
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin-top:10px}
+.modes .tsec{margin-top:24px}
+.modes .trow{grid-template-columns:1fr;gap:14px}
+.modes .tdemo .dboard{--sq:46px}
+.modes .tdemo .stage{transform:scale(.92);transform-origin:top center}
+.modes .tut-p{font-size:15px}
+@media (max-width:900px){ .modes{grid-template-columns:1fr} }
+
 
 .screen.tutorial{justify-content:flex-start;align-items:center;padding-top:20px;overflow-y:auto;scroll-behavior:smooth}
 .screen.tutorial .bgboard,.screen.tutorial .glow{position:fixed}
@@ -404,16 +404,8 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
       <div class="eyebrow">Basics</div>
       <h2 class="tut-h">Chess, plus a hand of spells.</h2>
       <p class="tut-p">Every turn you may cast a spell from your hand, then make a normal chess move. The king can never be captured: you win by checkmate, and spells can create check but never ignore it.</p>
-      <div class="compare">
-        <div class="cmp-head"></div><div class="cmp-head"><a href="#t-original">Original</a></div><div class="cmp-head"><a href="#t-draft">Draft</a></div>
-        <div class="cmp-k">Spells can capture</div><div class="cmp-v yes">Yes</div><div class="cmp-v no">Never</div>
-        <div class="cmp-k">Spells per turn</div><div class="cmp-v">1</div><div class="cmp-v">up to 2</div>
-        <div class="cmp-k">Deck</div><div class="cmp-v">15, three of each</div><div class="cmp-v">20, four of each</div>
-        <div class="cmp-k">Your hand</div><div class="cmp-v">3 dealt, swap 1</div><div class="cmp-v">6 drafted from pairs</div>
-        <div class="cmp-k">Hidden information</div><div class="cmp-v">Hands secret, deck revealed over time</div><div class="cmp-v">None once the draft ends</div>
-        <div class="cmp-k">Feel</div><div class="cmp-v">Swingy, tactical, big hits</div><div class="cmp-v">Positional, combos, tempo</div>
-      </div>
     </section>
+    <div class="modes">
     <section id="t-original" class="tsec">
       <div class="eyebrow">Mode one</div>
       <h2 class="tut-h">Original</h2>
@@ -437,6 +429,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#7a4f2b">Earth</span></h3><p>Only an empty square or one of your own pieces. Block a line, or make a piece untouchable for a turn.</p></div><div class="tdemo" data-demo="earth-pac"></div></div>
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414;border-color:#fff">Parasite</span></h3><p>Unchanged: infect, wait a turn, and whoever captures the awakened piece switches sides.</p></div><div class="tdemo" data-demo="parasite"></div></div>
     </section>
+    </div>
   </div>
 </div>
 </div>
