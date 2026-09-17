@@ -1,5 +1,9 @@
 {
   "rules": {
+    "lobby": {
+      ".read": "auth != null",
+      "$code": { ".write": "auth != null" }
+    },
     "games": {
       "$code": {
         "meta": {

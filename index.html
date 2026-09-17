@@ -232,6 +232,46 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .rules b{color:var(--ink)}
 @media (max-width:900px){ body{overflow:auto;height:auto} html,body{height:auto} .wrap{flex-wrap:wrap} :root{--sq:calc(min(92vw,100vh - 200px)/8)} .side{max-height:none;overflow:visible;width:100%} }
 @media (prefers-reduced-motion: reduce){ .card{transition:none} }
+
+/* ===== home / play screens ===== */
+.screen{position:fixed;inset:0;z-index:70;background:var(--bg);color:var(--ink);overflow:auto;display:flex;flex-direction:column;align-items:center;padding:28px 20px 40px}
+.screen[hidden]{display:none!important}
+.home-title{font-family:Sora,sans-serif;font-weight:700;font-size:clamp(44px,8vw,84px);letter-spacing:.04em;margin:8px 0 0;line-height:1}
+.home-sub{color:var(--muted);font-size:16px;margin:8px 0 26px;text-align:center;max-width:52ch}
+.home-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:34px}
+.bigbtn{font-family:Sora,sans-serif;font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase;padding:14px 34px;border-radius:6px;border:2px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+.bigbtn.ghost{background:transparent;color:var(--ink)}
+.bigbtn:hover{transform:translateY(-2px)}
+.showcase{display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:1100px}
+.fan{display:flex;align-items:flex-end;justify-content:center;height:230px;position:relative;width:min(92vw,560px)}
+.fan .card{position:absolute;bottom:0;left:50%;width:120px;height:168px;font-size:15px;transform-origin:50% 120%;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;box-shadow:0 14px 30px rgba(0,0,0,.35);cursor:pointer}
+.fan .card .art{width:80px;height:80px;margin-top:10px}
+.fan .card.hot{box-shadow:0 0 0 3px #fff,0 0 34px var(--spell),0 16px 34px rgba(0,0,0,.45);z-index:9}
+.demo{display:flex;flex-direction:column;align-items:center;gap:10px}
+.demo .board{--sq:58px;grid-template-columns:repeat(5,var(--sq));grid-template-rows:repeat(5,var(--sq))}
+.demo .cap{font-family:Sora,sans-serif;font-weight:600;font-size:14px;min-height:20px;text-align:center}
+.demo .cap b{color:var(--spell)}
+.play-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;width:min(96vw,900px);margin-top:10px}
+.panel{background:var(--panel);border:1px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.panel h3{font-family:Sora,sans-serif;font-size:13px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.panel label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.panel select,.panel input[type=number],.panel input[type=text]{font:inherit;padding:5px 8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.panel input[type=number]{width:64px}
+.lobby{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}
+.lobby .row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+.lobby .row:hover{border-color:var(--ink)}
+.lobby .code{font-size:18px;margin:0;letter-spacing:.14em}
+.lobby .meta{color:var(--muted);font-size:12px;margin-left:auto;text-align:right}
+.lobby .empty{color:var(--muted);font-size:13px}
+.backlink{align-self:flex-start;margin-bottom:10px;background:transparent;border:0;color:var(--muted);font:inherit;cursor:pointer;padding:4px 0}
+.backlink:hover{color:var(--ink)}
+.tut{max-width:64ch;line-height:1.55;font-size:15px}
+.tut h2{font-family:Sora,sans-serif;font-size:18px;margin:22px 0 6px}
+.tut ul{padding-left:18px;margin:6px 0}
+.tut b.sp{padding:0 6px;border-radius:3px;color:#fff}
+.pill.home{margin-left:auto}
+.pill.home+.pill{margin-left:0}
+@media (max-width:700px){ .fan{height:190px} .fan .card{width:96px;height:134px;font-size:12px} .fan .card .art{width:60px;height:60px} .demo .board{--sq:44px} }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
@@ -239,7 +279,45 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 </head>
 <body>
 
-<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
+<div class="screen" id="home">
+  <h1 class="home-title">Spellchess</h1>
+  <p class="home-sub">Chess with a deck of spells. Jump over pieces, rage into a queen, move twice, turn squares to stone, infect a piece and steal it.</p>
+  <div class="home-actions"><button class="bigbtn" id="homePlay">Play</button><button class="bigbtn ghost" id="homeTut">Tutorial</button></div>
+  <div class="showcase">
+    <div class="fan" id="fan"></div>
+    <div class="demo"><div class="board" id="demoBoard"></div><div class="cap" id="demoCap"></div></div>
+  </div>
+</div>
+<div class="screen" id="playScreen" hidden>
+  <button class="backlink" id="playBack">&larr; Home</button>
+  <h1 class="home-title" style="font-size:40px">Play</h1>
+  <div class="play-grid">
+    <div class="panel"><h3>Create online</h3>
+      <label>Mode <select id="pMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option><option value="draft">Draft</option></select></label>
+      <label>Clock <input type="checkbox" id="pClock" checked></label>
+      <label>Minutes <input type="number" id="pMin" min="1" max="180" value="5"></label>
+      <label>Increment (s) <input type="number" id="pInc" min="0" max="60" value="3"></label>
+      <button class="bigbtn" id="pCreate">Create</button>
+      <div class="online-note" id="pCreateNote"></div>
+    </div>
+    <div class="panel"><h3>Join online</h3>
+      <div class="online-row"><input id="pCode" placeholder="GAME CODE" maxlength="6" type="text"><button id="pJoin">Join</button></div>
+      <h3>Open challenges</h3>
+      <div class="lobby" id="lobby"><div class="empty">Loading…</div></div>
+      <div class="online-note" id="pJoinNote"></div>
+    </div>
+    <div class="panel"><h3>Hotseat (this device)</h3>
+      <label>Mode <select id="hMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option><option value="draft">Draft</option></select></label>
+      <label>Clock <input type="checkbox" id="hClock"></label>
+      <button class="bigbtn ghost" id="hStart">Start</button>
+    </div>
+  </div>
+</div>
+<div class="screen" id="tutScreen" hidden>
+  <button class="backlink" id="tutBack">&larr; Home</button>
+  <div class="tut" id="tutBody"></div>
+</div>
+<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
@@ -784,6 +862,7 @@ async function createOnline(){
   upd['games/'+code+'/state']=pub;
   upd['games/'+code+'/hands/w']=S.mode==='draft'?S.draft.w.offers.flat():S.hands.w.slice();
   upd['games/'+code+'/hands/b']=S.mode==='draft'?S.draft.b.offers.flat():S.hands.b.slice();
+  upd['lobby/'+code]={code,host:uid,mode:S.mode,clock:!!(S.clock&&S.clock.on),min:S.clock&&S.clock.on?Math.round(S.clock.w/60000):0,inc:S.clock&&S.clock.on?Math.round(S.clock.inc/1000):0,created:firebase.database.ServerValue.TIMESTAMP};
   try{ await firebase.database().ref().update(upd); attachOnline(code,1); }
   catch(e){ onlineNote('Could not create game: '+fbErr(e),true); }
 }
@@ -798,6 +877,7 @@ async function joinOnline(codeIn){
     if(seats.w!==uid && seats.b!==uid){
       const empty=!seats.w?'w':(!seats.b?'b':null);
       if(empty){ await firebase.database().ref('games/'+code+'/meta/seats/'+empty).transaction(cur=>cur?undefined:uid); }
+      try{ await firebase.database().ref('lobby/'+code).remove(); }catch(e){}
     }
     attachOnline(code,0);
   }catch(e){ onlineNote('Could not join: '+fbErr(e),true); renderOnline(); }
@@ -858,26 +938,14 @@ function rebuild(){
 function leaveOnline(silent){
   if(online){ (online.unsubs||[]).forEach(f=>{ try{f();}catch(e){} }); if(online.handUnsub) try{ online.handUnsub(); }catch(e){} }
   online=null; try{ localStorage.removeItem('spellchess_game'); }catch(e){}
-  if(!silent){ renderOnline(); newGame(); }
+  if(!silent){ renderOnline(); newGame(); showScreen('home'); }
 }
 function renderOnline(){
   const btn=document.getElementById('onlineBtn'); const body=document.getElementById('onlineBody');
   btn.className='pill'+(online?' on':''); btn.textContent=online?('Online · '+online.code):'Play online';
   const prevNote=document.getElementById('onlineNote'); const keep=prevNote?prevNote.textContent:'';
   if(!online){
-    const sv=id=>document.getElementById(id);
-    body.innerHTML=`<div class="online-opts">
-        <label>Mode <select id="olMode"><option value="classic">Classic</option><option value="pacifist">Pacifist</option><option value="draft">Draft</option></select></label>
-        <label><input type="checkbox" id="olClock"> Clock</label>
-        <span><input type="number" id="olMin" min="1" max="180"> min + <input type="number" id="olInc" min="0" max="60"> s</span>
-      </div>
-      <button id="olCreate" class="primary">Create game</button>
-      <div class="online-row"><input id="olCode" placeholder="GAME CODE" maxlength="6"><button id="olJoin">Join</button></div>
-      <div class="online-note" id="onlineNote">Create a game and send the code to your opponent. Either of you can close the page and come back later; the game is saved.</div>`;
-    sv('olMode').value=sv('sMode').value; sv('olClock').checked=sv('sClock').checked; sv('olMin').value=sv('sMin').value; sv('olInc').value=sv('sInc').value;
-    document.getElementById('olCreate').onclick=()=>{ sv('sMode').value=sv('olMode').value; sv('sClock').checked=sv('olClock').checked; sv('sMin').value=sv('olMin').value; sv('sInc').value=sv('olInc').value; createOnline(); };
-    document.getElementById('olJoin').onclick=()=>joinOnline(document.getElementById('olCode').value);
-    document.getElementById('olCode').onkeydown=e=>{ if(e.key==='Enter') joinOnline(e.target.value); };
+    body.innerHTML=`<div class="online-note" id="onlineNote">Not in an online game. Use Home &rarr; Play to create or join one.</div>`;
   } else {
     const seats=online.seats||{}; const waiting=!(seats.w&&seats.b);
     const who=online.seat?`You are ${NAMES[online.seat]}.`:'You are spectating.';
@@ -1256,10 +1324,88 @@ renderOnline();
 document.getElementById('sFlip').onchange=render;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); });
 
+
+/* ---------- home / play / tutorial screens ---------- */
+const TUT_HTML=`
+<h2>Spellchess</h2><p>Chess plus a deck of spell cards. Each turn: cast up to one spell, then make a chess move.</p>
+<h2>The spells</h2><ul>
+<li><b class="sp" style="background:#2f9e4e">Jump</b> pick one of your pieces. This turn it may pass over one piece in its path (rook, bishop, queen) or leap over an adjacent piece to the square beyond (any piece; pawns only forward).</li>
+<li><b class="sp" style="background:#d23a2a">Rage</b> one of your pieces, not a pawn, moves like a queen this turn. The king is allowed.</li>
+<li><b class="sp" style="background:#f2c531;color:#111">Speed</b> the piece you move moves a second time. The second move cannot capture. The first move may pass through check if the second gets you out.</li>
+<li><b class="sp" style="background:#7a4f2b">Earth</b> petrify any square except a king's until your next turn. Empty square: a rock nothing can cross. A piece there is frozen: it cannot move, be captured, or give check.</li>
+<li><b class="sp" style="background:#141414">Parasite</b> secretly infect a non-king piece. It lies dormant for one turn, awakens at the start of your next turn, and during the opponent's following turn whoever captures it switches sides. Kings are immune. Your opponent sees you played it, not where.</li></ul>
+<h2>Kings and winning</h2><ul><li>The king can never be captured. Win by checkmate.</li><li>You may not end your move in check. Spells create check; they don't ignore it.</li><li>In check with no legal move, a spell may still save you. If no card in your hand can, it's checkmate.</li><li>Stalemate is a draw. Pawns promote to a piece of your choice.</li></ul>
+<h2>Classic</h2><ul><li>15-card deck, 3 of each. 3 dealt to each player, kept secret.</li><li>Before the first move each player may secretly swap one card for a random one.</li><li>2 cards are revealed from the deck at the start and 1 more every 4 full moves; the last 3 stay hidden.</li></ul>
+<h2>Pacifist</h2><ul><li>Spells can never take material: Speed and Rage can't capture, Jump can't capture on the far side, Earth only on empty squares or your own pieces.</li><li>Up to 2 spells per turn. 20-card deck (4 each), 6 dealt, 1 swap. Both hands face up, no reveals.</li></ul>
+<h2>Draft</h2><ul><li>Pacifist rules, but hands are drafted: each player privately gets 3 pairs of different cards and keeps one from each; the other goes to the opponent.</li><li>Once the draft ends, both hands are face up.</li></ul>`;
+function showScreen(id){ for(const k of ['home','playScreen','tutScreen']){ document.getElementById(k).hidden=(k!==id); } if(id==='home') demoStart(); else demoStop(); if(id==='playScreen') lobbyStart(); else lobbyStop(); }
+function hideScreens(){ showScreen(null); }
+document.getElementById('homePlay').onclick=()=>showScreen('playScreen');
+document.getElementById('homeTut').onclick=()=>{ document.getElementById('tutBody').innerHTML=TUT_HTML; showScreen('tutScreen'); };
+document.getElementById('playBack').onclick=()=>showScreen('home');
+document.getElementById('tutBack').onclick=()=>showScreen('home');
+document.getElementById('homeBtn').onclick=()=>{ showScreen('home'); };
+function applyPlayOpts(mode,clock,min,inc){ const sv=id=>document.getElementById(id); sv('sMode').value=mode; sv('sClock').checked=!!clock; if(min) sv('sMin').value=min; if(inc!=null) sv('sInc').value=inc; }
+document.getElementById('pCreate').onclick=async()=>{ const sv=id=>document.getElementById(id); applyPlayOpts(sv('pMode').value,sv('pClock').checked,sv('pMin').value,sv('pInc').value); sv('pCreateNote').textContent='Creating…'; await createOnline(); if(online){ hideScreens(); } else sv('pCreateNote').textContent=(document.getElementById('onlineNote')||{}).textContent||'Could not create.'; };
+document.getElementById('pJoin').onclick=async()=>{ const sv=id=>document.getElementById(id); sv('pJoinNote').textContent='Joining…'; await joinOnline(sv('pCode').value); if(online){ hideScreens(); } else sv('pJoinNote').textContent=(document.getElementById('onlineNote')||{}).textContent||'Could not join.'; };
+document.getElementById('pCode').onkeydown=e=>{ if(e.key==='Enter') document.getElementById('pJoin').click(); };
+document.getElementById('hStart').onclick=()=>{ const sv=id=>document.getElementById(id); applyPlayOpts(sv('hMode').value,sv('hClock').checked,null,null); leaveOnline(true); newGame(); renderOnline(); hideScreens(); };
+/* lobby: open challenges */
+let lobbyUnsub=null;
+async function lobbyStart(){
+  const box=document.getElementById('lobby'); box.innerHTML='<div class="empty">Loading…</div>';
+  if(!(await fbReady)){ box.innerHTML='<div class="empty">Online play unavailable.</div>'; return; }
+  lobbyStop();
+  const ref=firebase.database().ref('lobby').orderByChild('created').limitToLast(20);
+  const cb=ref.on('value',snap=>{
+    const rows=[]; const now=Date.now();
+    snap.forEach(ch=>{ const v=ch.val(); if(v && now-(v.created||0)<2*3600*1000 && v.host!==uid) rows.push(v); });
+    rows.sort((a,b)=>(b.created||0)-(a.created||0));
+    box.innerHTML='';
+    if(!rows.length){ box.innerHTML='<div class="empty">No open challenges right now. Create one, or enter a code.</div>'; return; }
+    rows.forEach(v=>{ const r=document.createElement('div'); r.className='row'; r.innerHTML=`<div class="code">${v.code}</div><div class="meta">${v.mode||'classic'}${v.clock?` · ${v.min}+${v.inc}`:' · no clock'}<br>${Math.max(1,Math.round((now-(v.created||0))/60000))} min ago</div>`; r.onclick=()=>{ document.getElementById('pCode').value=v.code; document.getElementById('pJoin').click(); }; box.appendChild(r); });
+  }, e=>{ box.innerHTML='<div class="empty">Could not load challenges.</div>'; });
+  lobbyUnsub=()=>ref.off('value',cb);
+}
+function lobbyStop(){ if(lobbyUnsub){ try{ lobbyUnsub(); }catch(e){} lobbyUnsub=null; } }
+/* home demo: a 5x5 board that plays each spell in turn */
+const DEMO_SEQ=['jump','rage','speed','earth','parasite'];
+let demoTimer=null, demoIdx=0, demoBoardState=null, demoFx={};
+function demoRender(){
+  const b=document.getElementById('demoBoard'); if(!b) return; b.innerHTML='';
+  for(let r=4;r>=0;r--) for(let f=0;f<5;f++){ const i=r*5+f; const d=document.createElement('div'); d.className='sq '+(((r+f)%2)?'lt':'dk'); const p=demoBoardState[i];
+    if(demoFx.streak&&demoFx.streak.includes(i)){ const e=document.createElement('div'); e.className='streak'; e.style.animationDelay=(demoFx.streak.indexOf(i)*60)+'ms'; d.appendChild(e); }
+    if(demoFx.cls&&demoFx.cls[i]) d.classList.add(...demoFx.cls[i].split(' '));
+    if(p){ if(p.c==='x'){ const k=document.createElement('div'); k.className='rock'+(demoFx.rise===i?' rise':''); k.innerHTML=ROCK_SVG+(demoFx.rise===i?'<i class="dust"></i><i class="dust"></i><i class="dust"></i><i class="dust"></i>':''); d.appendChild(k); }
+      else { const sp=document.createElement('span'); sp.className='pc '+p.c; sp.textContent=GLYPH.b[p.t]+'\uFE0E'; d.appendChild(sp); } }
+    if(demoFx.ring===i){ const fr=document.createElement('div'); fr.className='flashring'; d.appendChild(fr); }
+    b.appendChild(d); }
+}
+function demoCap(type,text){ const c=document.getElementById('demoCap'); if(!c) return; c.style.setProperty('--spell',SPELLS[type].color); c.innerHTML=`<b>${SPELLS[type].name}</b> · ${text}`; document.querySelectorAll('#fan .card').forEach(el=>el.classList.toggle('hot',el.dataset.type===type)); }
+function demoStep(){
+  const type=DEMO_SEQ[demoIdx%DEMO_SEQ.length]; demoIdx++;
+  const B=Array(25).fill(null); demoBoardState=B; demoFx={cls:{}};
+  const bd=document.getElementById('demoBoard'); bd.style.setProperty('--spell',SPELLS[type].color); bd.style.setProperty('--dot',SPELLS[type].color);
+  const at=(ms,fn)=>setTimeout(()=>{ if(demoTimer) { fn(); demoRender(); } },ms);
+  if(type==='jump'){ B[2]={c:'w',t:'r'}; B[12]={c:'b',t:'p'}; demoCap(type,'the rook leaps over the pawn'); demoRender();
+    at(700,()=>{ demoFx.cls[2]='phased'; }); at(1500,()=>{ demoFx.cls={}; demoFx.streak=[2,7,12,17,22]; B[22]=B[2]; B[2]=null; }); }
+  if(type==='rage'){ B[6]={c:'w',t:'n'}; B[18]={c:'b',t:'p'}; demoCap(type,'the knight moves like a queen'); demoRender();
+    at(700,()=>{ demoFx.cls[6]='raged'; }); at(1600,()=>{ demoFx.cls={}; demoFx.streak=[6,12,18]; B[18]=B[6]; B[6]=null; }); }
+  if(type==='speed'){ B[0]={c:'w',t:'b'}; demoCap(type,'the bishop moves twice'); demoRender();
+    at(600,()=>{ demoFx.cls[0]='speed'; }); at(1200,()=>{ demoFx.cls={12:'speed'}; demoFx.streak=[0,6,12]; B[12]=B[0]; B[0]=null; }); at(2000,()=>{ demoFx.cls={}; demoFx.streak=[12,16,20]; B[20]=B[12]; B[12]=null; }); }
+  if(type==='earth'){ B[7]={c:'b',t:'r'}; B[2]={c:'w',t:'k'}; demoCap(type,'a rock rises and blocks the rook'); demoRender();
+    at(800,()=>{ B[12]={c:'x',t:'rock'}; demoFx.rise=12; demoFx.cls[12]='quake'; }); at(1700,()=>{ demoFx.rise=-1; demoFx.cls={}; }); }
+  if(type==='parasite'){ B[8]={c:'b',t:'p'}; B[14]={c:'w',t:'b'}; demoCap(type,'the pawn is infected; its captor switches sides'); demoRender();
+    at(600,()=>{ demoFx.cls[8]='infected'; }); at(1700,()=>{ demoFx.cls={8:'flipanim'}; demoFx.ring=8; B[8]={c:'b',t:'b'}; B[14]=null; }); }
+  demoTimer=setTimeout(demoStep,3600);
+}
+function demoStart(){ if(demoTimer) return; const fan=document.getElementById('fan'); if(fan&&!fan.children.length){ DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); const ang=(i-2)*13; c.style.transform=`translateX(-50%) rotate(${ang}deg) translateY(${Math.abs(i-2)*10}px)`; c.onclick=()=>{ demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); }; fan.appendChild(c); }); } demoTimer=1; demoStep(); }
+function demoStop(){ clearTimeout(demoTimer); demoTimer=null; }
 function start(data){
   newGame(); initFirebase();
   let saved=null; try{ saved=localStorage.getItem('spellchess_game'); }catch(e){}
-  if(saved && fbReady){ fbReady.then(ok=>{ if(ok) joinOnline(saved); }); }
+  if(saved && fbReady){ showScreen('home'); fbReady.then(async ok=>{ if(ok){ await joinOnline(saved); if(online) hideScreens(); } }); }
+  else showScreen('home');
 }
 window.claude?.hot?.snapshot?.(()=>({S,history}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
