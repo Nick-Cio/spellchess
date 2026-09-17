@@ -296,9 +296,9 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 @keyframes btnpulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.45)}100%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
 .screen.hero .bigbtn.ghost{color:#fff;border-color:#fff}
 @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-.arc{position:relative;height:250px;width:min(96vw,760px);margin-top:36px}
-.arc .card{position:absolute;left:50%;top:40px;width:120px;height:168px;font-size:15px;box-shadow:0 18px 40px rgba(0,0,0,.6);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;cursor:pointer;animation:floaty 5s ease-in-out infinite;will-change:transform}
-.arc .card .art{width:80px;height:80px;margin-top:10px}
+.arc{position:relative;height:290px;width:min(96vw,860px);margin-top:36px}
+.arc .card{position:absolute;left:50%;top:40px;width:140px;height:196px;font-size:17px;box-shadow:0 18px 40px rgba(0,0,0,.6);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;cursor:pointer;animation:floaty 5s ease-in-out infinite;will-change:transform}
+.arc .card .art{width:94px;height:94px;margin-top:12px}
 .arc .card:hover{z-index:9;box-shadow:0 0 0 3px #fff,0 0 40px var(--spell),0 24px 50px rgba(0,0,0,.7);animation-play-state:paused}
 @keyframes floaty{0%,100%{margin-top:0}50%{margin-top:-12px}}
 .hero-foot{margin-top:10px;font-family:Sora,sans-serif;font-size:14px;color:#cfcac3;min-height:22px;text-align:center}
@@ -1443,7 +1443,7 @@ function demoStep(){
 function demoStart(){ if(demoTimer) return; const tc=document.getElementById('tutCards'); if(tc&&!tc.children.length){ DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'sm',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); c.onclick=()=>{ demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); }; tc.appendChild(c); }); } demoTimer=1; demoStep(); }
 function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.children.length) return; const tip=document.getElementById('fanTip');
   DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color);
-    const k=i-2, off=(window.innerWidth<700?78:130)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
+    const k=i-2, off=(window.innerWidth<700?78:150)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
     c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s'; c.style.zIndex=i+1;
     c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
     c.onmouseleave=()=>{ tip.textContent=''; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
