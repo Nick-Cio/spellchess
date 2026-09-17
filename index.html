@@ -273,6 +273,41 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .pill.home{margin-left:auto}
 .pill.home+.pill{margin-left:0}
 @media (max-width:700px){ .fan{height:190px} .fan .card{width:96px;height:134px;font-size:12px} .fan .card .art{width:60px;height:60px} .demo .board{--sq:44px} }
+
+/* ===== hero ===== */
+.screen.hero{background:#0f0f0e;color:#f2f0ec;justify-content:center;overflow:hidden;perspective:900px}
+.bgboard{position:absolute;left:50%;top:55%;width:220vmax;height:220vmax;transform:translate(-50%,-30%) rotateX(62deg) rotateZ(8deg);background-image:linear-gradient(45deg,#1b1a19 25%,transparent 25%,transparent 75%,#1b1a19 75%),linear-gradient(45deg,#1b1a19 25%,transparent 25%,transparent 75%,#1b1a19 75%);background-color:#141413;background-size:12vmax 12vmax;background-position:0 0,6vmax 6vmax;opacity:.9;animation:boarddrift 40s linear infinite;mask-image:radial-gradient(ellipse at 50% 40%,#000 20%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 20%,transparent 70%)}
+@keyframes boarddrift{from{background-position:0 0,6vmax 6vmax}to{background-position:12vmax 12vmax,18vmax 18vmax}}
+.glow{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(80px);opacity:.28;mix-blend-mode:screen;pointer-events:none}
+.glow.g1{background:#2f9e4e;left:-20vmax;top:-20vmax;animation:glow1 18s ease-in-out infinite alternate}
+.glow.g2{background:#d23a2a;right:-25vmax;top:10vmax;animation:glow2 22s ease-in-out infinite alternate}
+.glow.g3{background:#f2c531;left:20vmax;bottom:-30vmax;animation:glow3 26s ease-in-out infinite alternate}
+@keyframes glow1{to{transform:translate(30vmax,20vmax)}}
+@keyframes glow2{to{transform:translate(-30vmax,25vmax)}}
+@keyframes glow3{to{transform:translate(20vmax,-20vmax)}}
+.hero-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%}
+.eyebrow{font-family:Sora,sans-serif;font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:#a19d98;margin-bottom:6px;animation:rise .9s ease-out both}
+.hero-title{font-family:Sora,sans-serif;font-weight:700;font-size:clamp(56px,11vw,140px);letter-spacing:.06em;line-height:.95;margin:0;color:#fff;text-shadow:0 8px 0 #000,0 0 40px rgba(255,255,255,.12);animation:rise 1s .1s ease-out both}
+.hero-title span{background:linear-gradient(90deg,#2f9e4e,#f2c531,#d23a2a,#7a4f2b,#2f9e4e);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;animation:shimmer 9s linear infinite,rise 1s .1s ease-out both}
+@keyframes shimmer{to{background-position:300% 0}}
+.hero-sub{color:#cfcac3;font-size:clamp(15px,2vw,20px);text-align:center;margin:14px 0 22px;line-height:1.45;animation:rise 1s .25s ease-out both}
+.home-actions{animation:rise 1s .4s ease-out both}
+.bigbtn.glowbtn{background:#fff;color:#0f0f0e;border-color:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.5);animation:btnpulse 2.4s ease-out infinite}
+@keyframes btnpulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}100%{box-shadow:0 0 0 22px rgba(255,255,255,0)}}
+.screen.hero .bigbtn.ghost{color:#fff;border-color:#fff}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.arc{position:relative;height:250px;width:min(96vw,760px);margin-top:22px}
+.arc .card{position:absolute;left:50%;top:40px;width:120px;height:168px;font-size:15px;box-shadow:0 18px 40px rgba(0,0,0,.6);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;cursor:pointer;animation:floaty 5s ease-in-out infinite;will-change:transform}
+.arc .card .art{width:80px;height:80px;margin-top:10px}
+.arc .card:hover{z-index:9;box-shadow:0 0 0 3px #fff,0 0 40px var(--spell),0 24px 50px rgba(0,0,0,.7);animation-play-state:paused}
+@keyframes floaty{0%,100%{margin-top:0}50%{margin-top:-12px}}
+.hero-foot{margin-top:10px;font-family:Sora,sans-serif;font-size:14px;color:#cfcac3;min-height:22px;text-align:center}
+.hero-foot b{color:var(--spell)}
+.tutdemo{display:flex;gap:26px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+#tutCards .card{cursor:pointer}
+#tutCards .card.hot{box-shadow:0 0 0 3px #fff,0 0 26px var(--spell)}
+@media (max-width:700px){ .arc{height:200px} .arc .card{width:92px;height:128px;font-size:12px} .arc .card .art{width:58px;height:58px} }
+@media (prefers-reduced-motion: reduce){ .bgboard,.glow,.arc .card,.hero-title span,.bigbtn.glowbtn{animation:none} }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
@@ -280,13 +315,16 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 </head>
 <body>
 
-<div class="screen" id="home">
-  <h1 class="home-title">Spellchess</h1>
-  <p class="home-sub">Chess with a deck of spells. Jump over pieces, rage into a queen, move twice, turn squares to stone, infect a piece and steal it.</p>
-  <div class="home-actions"><button class="bigbtn" id="homePlay">Play</button><button class="bigbtn ghost" id="homeTut">Tutorial</button></div>
-  <div class="showcase">
-    <div class="fan" id="fan"></div>
-    <div class="demo"><div class="board" id="demoBoard"></div><div class="cap" id="demoCap"></div></div>
+<div class="screen hero" id="home">
+  <div class="bgboard"></div>
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">A chess variant</div>
+    <h1 class="hero-title">SPELL<span>CHESS</span></h1>
+    <p class="hero-sub">Chess with a deck of spells.<br>Jump. Rage. Speed. Earth. Parasite.</p>
+    <div class="home-actions"><button class="bigbtn glowbtn" id="homePlay">Play</button><button class="bigbtn ghost" id="homeTut">Tutorial</button></div>
+    <div class="arc" id="fan"></div>
+    <div class="hero-foot" id="fanTip">Hover a card</div>
   </div>
 </div>
 <div class="screen" id="playScreen" hidden>
@@ -316,6 +354,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 </div>
 <div class="screen" id="tutScreen" hidden>
   <button class="backlink" id="tutBack">&larr; Home</button>
+  <div class="tutdemo"><div class="demo"><div class="board" id="demoBoard"></div><div class="cap" id="demoCap"></div></div><div class="cards" id="tutCards"></div></div>
   <div class="tut" id="tutBody"></div>
 </div>
 <div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
@@ -1339,7 +1378,7 @@ const TUT_HTML=`
 <h2>Classic</h2><ul><li>15-card deck, 3 of each. 3 dealt to each player, kept secret.</li><li>Before the first move each player may secretly swap one card for a random one.</li><li>2 cards are revealed from the deck at the start and 1 more every 4 full moves; the last 3 stay hidden.</li></ul>
 <h2>Pacifist</h2><ul><li>Spells can never take material: Speed and Rage can't capture, Jump can't capture on the far side, Earth only on empty squares or your own pieces.</li><li>Up to 2 spells per turn. 20-card deck (4 each), 6 dealt, 1 swap. Both hands face up, no reveals.</li></ul>
 <h2>Draft</h2><ul><li>Pacifist rules, but hands are drafted: each player privately gets 3 pairs of different cards and keeps one from each; the other goes to the opponent.</li><li>Once the draft ends, both hands are face up.</li></ul>`;
-function showScreen(id){ for(const k of ['home','playScreen','tutScreen']){ document.getElementById(k).hidden=(k!==id); } if(id==='home') demoStart(); else demoStop(); if(id==='playScreen') lobbyStart(); else lobbyStop(); }
+function showScreen(id){ for(const k of ['home','playScreen','tutScreen']){ document.getElementById(k).hidden=(k!==id); } if(id==='home') homeFan(); if(id==='tutScreen') demoStart(); else demoStop(); if(id==='playScreen') lobbyStart(); else lobbyStop(); }
 function hideScreens(){ showScreen(null); }
 document.getElementById('homePlay').onclick=()=>showScreen('playScreen');
 document.getElementById('homeTut').onclick=()=>{ document.getElementById('tutBody').innerHTML=TUT_HTML; showScreen('tutScreen'); };
@@ -1382,7 +1421,7 @@ function demoRender(){
     if(demoFx.ring===i){ const fr=document.createElement('div'); fr.className='flashring'; d.appendChild(fr); }
     b.appendChild(d); }
 }
-function demoCap(type,text){ const c=document.getElementById('demoCap'); if(!c) return; c.style.setProperty('--spell',SPELLS[type].color); c.innerHTML=`<b>${SPELLS[type].name}</b> · ${text}`; document.querySelectorAll('#fan .card').forEach(el=>el.classList.toggle('hot',el.dataset.type===type)); }
+function demoCap(type,text){ const c=document.getElementById('demoCap'); if(!c) return; c.style.setProperty('--spell',SPELLS[type].color); c.innerHTML=`<b>${SPELLS[type].name}</b> · ${text}`; document.querySelectorAll('#tutCards .card').forEach(el=>el.classList.toggle('hot',el.dataset.type===type)); }
 function demoStep(){
   const type=DEMO_SEQ[demoIdx%DEMO_SEQ.length]; demoIdx++;
   const B=Array(25).fill(null); demoBoardState=B; demoFx={cls:{}};
@@ -1400,7 +1439,15 @@ function demoStep(){
     at(600,()=>{ demoFx.cls[8]='infected'; }); at(1700,()=>{ demoFx.cls={8:'flipanim'}; demoFx.ring=8; B[8]={c:'b',t:'b'}; B[14]=null; }); }
   demoTimer=setTimeout(demoStep,3600);
 }
-function demoStart(){ if(demoTimer) return; const fan=document.getElementById('fan'); if(fan&&!fan.children.length){ DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); const ang=(i-2)*7; const off=(i-2)*(window.innerWidth<700?68:105); c.style.transform=`translateX(calc(-50% + ${off}px)) rotate(${ang}deg) translateY(${Math.abs(i-2)*9}px)`; c.onclick=()=>{ demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); }; fan.appendChild(c); }); } demoTimer=1; demoStep(); }
+function demoStart(){ if(demoTimer) return; const tc=document.getElementById('tutCards'); if(tc&&!tc.children.length){ DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'sm',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); c.onclick=()=>{ demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); }; tc.appendChild(c); }); } demoTimer=1; demoStep(); }
+function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.children.length) return; const tip=document.getElementById('fanTip');
+  DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color);
+    const k=i-2, off=(window.innerWidth<700?78:130)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
+    c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s';
+    c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].tip}`; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
+    c.onmouseleave=()=>{ tip.textContent='Hover a card'; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
+    c.onclick=()=>{ document.getElementById('homeTut').click(); demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); };
+    fan.appendChild(c); }); }
 function demoStop(){ clearTimeout(demoTimer); demoTimer=null; }
 function start(data){
   newGame(); initFirebase();
