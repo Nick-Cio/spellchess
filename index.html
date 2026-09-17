@@ -1356,10 +1356,9 @@ function render(){
   if(!reviewing) viewPly=null;
   const dispBoard=reviewing?decBoard(S.hist[viewPly].board):S.board;
   const dispLast=reviewing?S.hist[viewPly].last:S.lastMove;
-  board.classList.toggle('review',!!reviewing);
   const legalMoves=(S.sel>=0&&!S.pending&&!reviewing)?legal(S,S.sel):[];
   const targets=pickTargets(); const spellColor=S.pending?SPELLS[S.pending.type].color:(S.spell?SPELLS[S.spell.type].color:'');
-  board.className='board'+(S.pending?' arm arm-'+S.pending.type:''); board.style.setProperty('--spell',spellColor||'transparent');
+  board.className='board'+(S.pending?' arm arm-'+S.pending.type:'')+(reviewing?' review':''); board.style.setProperty('--spell',spellColor||'transparent');
   const prev=[];
   board.style.setProperty('--dot', S.spell?SPELLS[S.spell.type].color:'rgba(0,0,0,.28)');
   for(let row=0;row<8;row++) for(let col=0;col<8;col++){
