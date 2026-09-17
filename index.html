@@ -243,10 +243,11 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .bigbtn.ghost{background:transparent;color:var(--ink)}
 .bigbtn:hover{transform:translateY(-2px)}
 .showcase{display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:1100px}
-.fan{display:flex;align-items:flex-end;justify-content:center;height:230px;position:relative;width:min(92vw,560px)}
+.fan{display:flex;align-items:flex-end;justify-content:center;height:230px;position:relative;width:min(92vw,620px)}
 .fan .card{position:absolute;bottom:0;left:50%;width:120px;height:168px;font-size:15px;transform-origin:50% 120%;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;box-shadow:0 14px 30px rgba(0,0,0,.35);cursor:pointer}
 .fan .card .art{width:80px;height:80px;margin-top:10px}
-.fan .card.hot{box-shadow:0 0 0 3px #fff,0 0 34px var(--spell),0 16px 34px rgba(0,0,0,.45);z-index:9}
+.fan .card.hot{box-shadow:0 0 0 3px #fff,0 0 34px var(--spell),0 16px 34px rgba(0,0,0,.45);z-index:9;filter:brightness(1.08)}
+.fan .card:not(.hot){filter:brightness(.85)}
 .demo{display:flex;flex-direction:column;align-items:center;gap:10px}
 .demo .board{--sq:58px;grid-template-columns:repeat(5,var(--sq));grid-template-rows:repeat(5,var(--sq))}
 .demo .cap{font-family:Sora,sans-serif;font-weight:600;font-size:14px;min-height:20px;text-align:center}
@@ -1399,7 +1400,7 @@ function demoStep(){
     at(600,()=>{ demoFx.cls[8]='infected'; }); at(1700,()=>{ demoFx.cls={8:'flipanim'}; demoFx.ring=8; B[8]={c:'b',t:'b'}; B[14]=null; }); }
   demoTimer=setTimeout(demoStep,3600);
 }
-function demoStart(){ if(demoTimer) return; const fan=document.getElementById('fan'); if(fan&&!fan.children.length){ DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); const ang=(i-2)*13; c.style.transform=`translateX(-50%) rotate(${ang}deg) translateY(${Math.abs(i-2)*10}px)`; c.onclick=()=>{ demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); }; fan.appendChild(c); }); } demoTimer=1; demoStep(); }
+function demoStart(){ if(demoTimer) return; const fan=document.getElementById('fan'); if(fan&&!fan.children.length){ DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); const ang=(i-2)*7; const off=(i-2)*(window.innerWidth<700?68:105); c.style.transform=`translateX(calc(-50% + ${off}px)) rotate(${ang}deg) translateY(${Math.abs(i-2)*9}px)`; c.onclick=()=>{ demoIdx=i; clearTimeout(demoTimer); demoTimer=1; demoStep(); }; fan.appendChild(c); }); } demoTimer=1; demoStep(); }
 function demoStop(){ clearTimeout(demoTimer); demoTimer=null; }
 function start(data){
   newGame(); initFirebase();
