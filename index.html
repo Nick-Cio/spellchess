@@ -397,11 +397,11 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 <div id="castfx" hidden><div class="fxwash"></div><div class="fxicon"></div><div class="fxname"></div></div>
 <script>
 const SPELLS={
-  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Your piece may jump over one piece this turn.',tipPac:'Your piece may jump over one piece this turn. No capture on landing.'},
-  rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.',tipPac:'A non-pawn piece moves as a queen this turn, without capturing.'},
-  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.',tipPac:'Move the same piece twice. No captures.'},
-  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.',tipPac:'Petrify an empty square or your own piece until your next turn.'},
-  parasite:{name:'Parasite',color:'#141414',ink:'#fff',tip:'Infect a piece. Its captor switches sides.',tipPac:'Infect a piece. It awakens next turn; its captor switches sides.'},
+  jump:{name:'Jump',color:'#2f9e4e',ink:'#fff',tip:'Your piece may jump over one piece this turn.',tipPac:'Jump over one piece. No capture.'},
+  rage:{name:'Rage',color:'#d23a2a',ink:'#fff',tip:'A non-pawn piece (king included) moves as a queen this turn.',tipPac:'Move like a queen. No capture.'},
+  speed:{name:'Speed',color:'#f2c531',ink:'#1a1a1a',tip:'Move the same piece twice. No capture on the second move.',tipPac:'Move twice. No capture.'},
+  earth:{name:'Earth',color:'#7a4f2b',ink:'#fff',tip:'Petrify any square: nothing moves in, out, or through until your next turn.',tipPac:'Petrify an empty square or your piece.'},
+  parasite:{name:'Parasite',color:'#141414',ink:'#fff',tip:'Infect a piece. Its captor switches sides.',tipPac:'Infect a piece. Its captor switches sides.'},
 };
 const PIX={
 speed:[
