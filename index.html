@@ -311,6 +311,8 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
 /* ===== tutorial ===== */
 .screen.tutorial{justify-content:flex-start;align-items:center;padding-top:20px;overflow-y:auto;scroll-behavior:smooth}
+.screen.tutorial .bgboard,.screen.tutorial .glow{position:fixed}
+.screen.tutorial .bgboard{top:50%;transform:translate(-50%,-40%) rotateX(62deg) rotateZ(8deg)}
 .tut-inner{position:relative;z-index:2;width:min(96vw,1040px);display:flex;flex-direction:column;gap:10px;padding-bottom:80px}
 .tut-top{display:flex;align-items:center;gap:20px;margin-bottom:6px}
 .backlink.light{color:#cfcac3} .backlink.light:hover{color:#fff}
@@ -403,7 +405,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#d23a2a">Rage</span></h3><p>One of your pieces, not a pawn, moves like a queen this turn. The king is allowed.</p></div><div class="tdemo" data-demo="rage"></div></div>
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#f2c531;color:#111">Speed</span></h3><p>The piece you move moves a second time. The second move cannot capture. The first move may pass through check as long as the second gets you out.</p></div><div class="tdemo" data-demo="speed"></div></div>
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#7a4f2b">Earth</span></h3><p>Turn any square except a king's to stone until your next turn. An empty square becomes a rock nothing can cross. A piece there is frozen: it cannot move, be captured, or give check.</p></div><div class="tdemo" data-demo="earth"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414">Parasite</span></h3><p>Secretly infect a piece. It lies dormant for one turn, then awakens at the start of your next turn. Whoever captures it during the opponent's following turn switches sides. Kings are immune. Your opponent knows you played it, not where.</p></div><div class="tdemo" data-demo="parasite"></div></div>
+      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414;border-color:#fff">Parasite</span></h3><p>Secretly infect a piece. It lies dormant for one turn, then awakens at the start of your next turn. Whoever captures it during the opponent's following turn switches sides. Kings are immune. Your opponent knows you played it, not where.</p></div><div class="tdemo" data-demo="parasite"></div></div>
       <div class="trow"><div class="ttext"><h3>Checkmate</h3><p>You may not end your move in check. If your turn starts in check with no legal move, a spell may still save you. If no card in your hand can, it's checkmate. Stalemate is a draw, and pawns promote to a piece of your choice.</p></div></div>
     </section>
     <section id="t-draft" class="tsec">
@@ -415,7 +417,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#d23a2a">Rage</span></h3><p>Moves like a queen, but cannot capture.</p></div><div class="tdemo" data-demo="rage-pac"></div></div>
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#f2c531;color:#111">Speed</span></h3><p>Two moves, neither may capture.</p></div><div class="tdemo" data-demo="speed-pac"></div></div>
       <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#7a4f2b">Earth</span></h3><p>Only an empty square or one of your own pieces. Block a line, or make a piece untouchable for a turn.</p></div><div class="tdemo" data-demo="earth-pac"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414">Parasite</span></h3><p>Unchanged: infect, wait a turn, and whoever captures the awakened piece switches sides.</p></div><div class="tdemo" data-demo="parasite"></div></div>
+      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414;border-color:#fff">Parasite</span></h3><p>Unchanged: infect, wait a turn, and whoever captures the awakened piece switches sides.</p></div><div class="tdemo" data-demo="parasite"></div></div>
     </section>
   </div>
 </div>
