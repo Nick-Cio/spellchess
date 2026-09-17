@@ -1537,16 +1537,16 @@ const DEMOS={
     a.cap(null,'…and draw a random one'); const n=a.card(null,10,24,false); await a.fly(n,182,150,{ms:420}); hand[1]=await a.flipCard(n,'rage');
     await a.wait(800); a.cap(null,'2 cards are revealed from the deck, public to both'); for(let i=0;i<2;i++){ const c=a.card(null,10,24,false); await a.fly(c,150+i*72,24,{ms:420}); await a.flipCard(c,['parasite','jump'][i]); }
     await a.wait(1600); },
-  async draft(a){ const st=a.stage(320,230); a.label('opponent',10,8); a.label('you',10,146);
+  async draft(a){ const st=a.stage(340,250); a.label('opponent',10,0); a.label('you',10,142);
     const pairs=[['jump','rage'],['earth','speed'],['parasite','jump']]; const picks=[0,1,0]; const mine=[], theirs=[];
     for(let i=0;i<3;i++){ a.cap(null,`pair ${i+1}: keep one, the other goes to your opponent`);
-      const c0=a.card(pairs[i][0],200,70,false), c1=a.card(pairs[i][1],200,70,false); await a.wait(50);
-      const n0=await a.flipCard(c0,pairs[i][0]); await a.fly(n0,92,70,{ms:300}); const n1=await a.flipCard(c1,pairs[i][1]); await a.fly(n1,164,70,{ms:300});
+      const c0=a.card(pairs[i][0],200,78,false), c1=a.card(pairs[i][1],200,78,false); await a.wait(50);
+      const n0=await a.flipCard(c0,pairs[i][0]); await a.fly(n0,100,78,{ms:300}); const n1=await a.flipCard(c1,pairs[i][1]); await a.fly(n1,176,78,{ms:300});
       await a.wait(900); const keep=picks[i]?n1:n0, give=picks[i]?n0:n1; a.glow(keep); await a.wait(500);
-      await Promise.all([a.fly(keep,10+i*72,150,{ms:520}),a.fly(give,10+i*72,-8,{ms:520,rot:0})]); a.glow(keep,false); mine.push(keep); theirs.push(give); await a.wait(300); }
-    a.cap(null,'both hands are then turned face up'); for(let i=0;i<3;i++){ const c=a.card(null,226+i*30,-8,false); theirs.push(c); }
-    await a.wait(700); for(let i=3;i<6;i++){ theirs[i]=await a.flipCard(theirs[i],['rage','earth','speed'][i-3]); }
-    for(let i=0;i<3;i++){ const c=a.card(null,226+i*30,150,false); await a.wait(80); await a.flipCard(c,['earth','parasite','rage'][i]); }
+      await Promise.all([a.fly(keep,8+i*54,158,{ms:520}),a.fly(give,8+i*54,16,{ms:520})]); a.glow(keep,false); mine.push(keep); theirs.push(give); await a.wait(300); }
+    a.cap(null,'both hands are then turned face up'); const ob=[], mb=[];
+    for(let i=0;i<3;i++){ ob.push(a.card(null,178+i*54,16,false)); mb.push(a.card(null,178+i*54,158,false)); }
+    await a.wait(700); for(let i=0;i<3;i++){ await a.flipCard(ob[i],['rage','earth','speed'][i]); await a.flipCard(mb[i],['earth','parasite','rage'][i]); }
     await a.wait(1800); },
 };
 let tutDemos=[];
