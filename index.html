@@ -69,10 +69,10 @@ h1{text-shadow:0 3px 0 #000}
 .sq .rock.rise .dust{animation:dust .55s ease-out forwards}
 .sq .rock.rise .dust:nth-child(2){--dx:-1.4} .sq .rock.rise .dust:nth-child(3){--dx:-.6} .sq .rock.rise .dust:nth-child(4){--dx:.6} .sq .rock.rise .dust:nth-child(5){--dx:1.4}
 @keyframes dust{0%{opacity:0;transform:translate(-50%,0) scale(.6)}25%{opacity:.9}100%{opacity:0;transform:translate(calc(-50% + var(--dx,0)*var(--sq)*.32),calc(var(--sq)*-.28)) scale(1.2)}}
-.sq.infected::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 55%, rgba(0,0,0,.55), rgba(0,0,0,0) 70%);animation:veil 2.4s ease-in-out infinite;animation-delay:var(--ph,0ms);pointer-events:none}
+.sq.infected::before{content:"";position:absolute;inset:12%;background:radial-gradient(circle at 50% 55%, rgba(0,0,0,.5), rgba(0,0,0,0) 65%);animation:veil 2.4s ease-in-out infinite;animation-delay:var(--ph,0ms);pointer-events:none}
 .sq.infected .pc{animation:throb 2.4s ease-in-out infinite;animation-delay:var(--ph,0ms)}
 .sq.infected .pc.w{-webkit-text-stroke:calc(var(--sq)*.03) #000}
-@keyframes throb{0%,100%{filter:drop-shadow(0 0 2px #000) drop-shadow(0 0 4px #000)}50%{filter:drop-shadow(0 0 6px #000) drop-shadow(0 0 14px #000)}}
+@keyframes throb{0%,100%{filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 3px #000)}50%{filter:drop-shadow(0 0 4px #000) drop-shadow(0 0 8px #000)}}
 @keyframes veil{0%,100%{opacity:.5}50%{opacity:1}}
 .sq.flipanim .pc{animation:flip .9s ease-in-out;animation-delay:var(--t0,0ms)}
 @keyframes flip{0%{transform:scaleX(1)}35%{transform:scaleX(0) translateY(-6%);filter:drop-shadow(0 0 12px #000)}60%{transform:scaleX(1.15) translateY(-6%);filter:drop-shadow(0 0 16px #000)}100%{transform:scaleX(1)}}
@@ -153,14 +153,17 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .side{display:grid;grid-template-columns:1fr;grid-auto-rows:min-content;gap:12px;flex:none;width:680px;min-width:0;max-height:100%;overflow:auto;padding-top:36px;align-items:start}
 .side .wide{grid-column:1/-1}
 #handBlock,#trackBlock,#movesBlock{grid-column:1}
-.moves{display:grid;grid-template-columns:34px 1fr 1fr;font-family:'IBM Plex Mono',monospace;font-size:13px;max-height:220px;overflow:auto;row-gap:2px}
-.moves .num{color:var(--muted);padding:3px 0}
-.moves .ply{padding:3px 8px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--ink)}
-.moves .ply:hover{background:rgba(255,255,255,.06)}
-.moves .ply.cur{background:rgba(255,255,255,.14);outline:1px solid rgba(255,255,255,.25)}
-.moves .sp{display:inline-block;font-family:Sora,sans-serif;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid #000;color:#fff}
-.moves .sp.speed{color:#111}
-.moves .empty{grid-column:1/-1;color:var(--muted);font-family:'IBM Plex Sans',sans-serif}
+.moves{display:grid;grid-template-columns:40px 1fr 1fr;font-family:Sora,sans-serif;font-size:14px;font-weight:600;max-height:240px;overflow:auto;row-gap:0;column-gap:0;border-radius:6px;overflow-x:hidden}
+.moves>div{padding:7px 10px;min-height:34px;display:flex;align-items:center}
+.moves .num{color:var(--muted);font-weight:500;font-family:'IBM Plex Mono',monospace;font-size:12px;background:rgba(255,255,255,.03)}
+.moves .ply{cursor:pointer;gap:6px;flex-wrap:wrap;color:var(--ink)}
+.moves .num:nth-of-type(6n+1),.moves .num:nth-of-type(6n+1)+.ply,.moves .num:nth-of-type(6n+1)+.ply+.ply{background:rgba(255,255,255,.035)}
+.moves .ply:hover{background:rgba(255,255,255,.09)!important}
+.moves .ply.cur{background:rgba(255,255,255,.16)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.moves .fg{font-family:"Apple Symbols","Segoe UI Symbol","DejaVu Sans",sans-serif;font-size:17px;line-height:1;margin-right:1px}
+.moves .mv i{color:var(--muted);font-style:normal;margin:0 2px}
+.moves .sp{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;border:1px solid #000;flex:none}
+.moves .sp svg{width:14px;height:14px}
 .board.review{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 #settingsBlock,#onlineBlock{position:fixed;top:52px;right:16px;z-index:30;width:300px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
 .pill{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:999px}
@@ -1325,7 +1328,7 @@ function renderBars(){
     if(diff>0){ const p=document.createElement('span'); p.className='matplus'; p.textContent='+'+diff; cw.appendChild(p); }
     el.appendChild(cw);
     const n=(S.hands&&S.hands[side])?S.hands[side].length:0;
-    const mc=document.createElement('div'); mc.className='minicards'; for(let i=0;i<n;i++){ mc.appendChild(document.createElement('i')); } const nn=document.createElement('span'); nn.className='n'; nn.textContent=n; mc.appendChild(nn);
+    const mc=document.createElement('div'); mc.className='minicards'; for(let i=0;i<n;i++){ mc.appendChild(document.createElement('i')); }
     el.appendChild(mc);
   }
 }
@@ -1346,9 +1349,11 @@ function showEnd(){
   document.getElementById('endClose').onclick=()=>{ fx.hidden=true; endShownFor='dismissed:'+key; };
   document.getElementById('endHome').onclick=()=>{ fx.hidden=true; endShownFor='dismissed:'+key; if(typeof leaveOnline==='function'){ leaveOnline(true); } try{ localStorage.removeItem('spellchess_game'); }catch(e){} newGame(); if(typeof renderOnline==='function') renderOnline(); if(typeof showScreen==='function') showScreen('home'); };
 }
+let handDealT0=0, lastPhaseSeen=null;
 function render(){
   if(!S.pending) hoverSq=-1;
   checkDraftIntro();
+  if(lastPhaseSeen&&lastPhaseSeen!=='play'&&S.phase==='play'){ handDealT0=Date.now(); setTimeout(render,1700); } lastPhaseSeen=S.phase;
   const view=(inMulligan()&&!online)?(mullSeat()||S.turn):((inDraft()&&!online)?(draftSeat()||S.turn):(mySeat()||S.turn));
   const flip=online?(online.seat==='b'):(document.getElementById('sFlip').checked && S.turn==='b');
   const board=document.getElementById('board'); board.innerHTML='';
@@ -1373,7 +1378,7 @@ function render(){
     if(targets.includes(sq)){ d.classList.add('cand'); if(sq===hoverSq) d.classList.add('hov'); }
     if(flashSq===sq){ const fr=document.createElement('div'); fr.className='flashring'; fr.style.animationDelay=since(flashT0); d.appendChild(fr); }
     const pv=prev.find(x=>x.to===sq); if(pv){ const o=document.createElement('div'); o.className=pv.cap?'prevcap':'prev'; d.appendChild(o); }
-    const infRec=infOf(sq); if(infRec && (infRec.by===view || S.over)){ d.classList.add(infRec.dormant?'dormant':'infected'); if(awakeSq===sq) d.classList.add('awake'); d.style.setProperty('--ph',(-(Date.now()%2400))+'ms'); const dots=document.createElement('div'); dots.className='infdots'; for(let k=0;k<infRec.left;k++){ const o=document.createElement('span'); dots.appendChild(o); } d.appendChild(dots); }
+    const infRec=infOf(sq); if(infRec && (infRec.by===view || S.over)){ d.classList.add(infRec.dormant?'dormant':'infected'); if(awakeSq===sq) d.classList.add('awake'); d.style.setProperty('--ph',(-(Date.now()%2400))+'ms'); }
     if(S.pending&&S.pending.type==='parasite'&&sq===hoverSq&&targets.includes(sq)) d.classList.add('infected');
     if(flipSq===sq){ d.classList.add('flipanim'); d.style.setProperty('--t0',since(flipT0)); const fr=document.createElement('div'); fr.className='flashring dark'; fr.style.animationDelay=since(flipT0); d.appendChild(fr); }
     if(S.pending&&S.pending.type==='earth'&&sq===hoverSq&&targets.includes(sq)){ const k=document.createElement('div'); k.className='rock ghost'; k.innerHTML=ROCK_SVG; d.appendChild(k); }
@@ -1535,7 +1540,8 @@ function render(){
     hand.appendChild(row);
   }
   else { const pubLeft=Object.assign({},(S.pub&&S.pub[me])?S.pub[me].reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{}):{});
-    S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } if(false&&pubLeft[t]>0){ pubLeft[t]--; const tag=document.createElement('span'); tag.className='pubtag'; tag.textContent='public'; c.appendChild(tag); } hand.appendChild(c); }); }
+    const dealing=Date.now()-handDealT0<1600;
+    S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, (canCast?'playable':(armed?'armed':'dim'))+(dealing?' dealin':'')); if(dealing) c.style.animationDelay=(-(Date.now()-handDealT0)+i*90)+'ms'; if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } if(false&&pubLeft[t]>0){ pubLeft[t]--; const tag=document.createElement('span'); tag.className='pubtag'; tag.textContent='public'; c.appendChild(tag); } hand.appendChild(c); }); }
   if(pacRules() && !spectator && !inMulligan() && !inDraft()){ const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===me) hand.appendChild(cardEl(t,'used',false)); }); }
   const rev=document.getElementById('revealed'); rev.innerHTML=''; S.revealed.forEach(t=>rev.appendChild(cardEl(t,'sm')));
   document.getElementById('revN').textContent=S.revealed.length;
@@ -1544,7 +1550,7 @@ function render(){
     const groups=[[me,mineL],[op,oppL]];
     groups.forEach(([who,label])=>{ const g=document.createElement('div'); g.className='discgroup'; const l=document.createElement('div'); l.className='disclabel'; l.textContent=label; g.appendChild(l); const row=document.createElement('div'); row.className='cards'; row.style.minHeight='0';
       S.discard.forEach((t,i)=>{ if((by[i]||null)===who) row.appendChild(cardEl(t,'sm',false)); });
-      if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); }
+     
       g.appendChild(row); disc.appendChild(g); });
   }
   document.getElementById('discN').textContent=S.discard.length;
@@ -1552,8 +1558,8 @@ function render(){
   const tr=document.getElementById('track'); tr.innerHTML='';
   document.getElementById('trackTitle').textContent=pacRules()?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
   let total=0;
-  if(S.mode==='draft' && S.phase==='draft'){ const row=document.createElement('div'); row.className='cards'; const pubOp=(S.pub&&S.pub[op])||[]; pubOp.forEach(t=>row.appendChild(cardEl(t,''))); const hidden=Math.max(0,S.hands[op].length-pubOp.length); for(let i=0;i<hidden;i++){ const b=document.createElement('div'); b.className='card back'; b.textContent='?'; row.appendChild(b); } const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op) row.appendChild(cardEl(t,'used',false)); }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
-  else if(openHands()){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  if(S.mode==='draft' && S.phase==='draft'){ const row=document.createElement('div'); row.className='cards'; const pubOp=(S.pub&&S.pub[op])||[]; pubOp.forEach(t=>row.appendChild(cardEl(t,''))); const hidden=Math.max(0,S.hands[op].length-pubOp.length); for(let i=0;i<hidden;i++){ const b=document.createElement('div'); b.className='card back'; b.textContent='?'; row.appendChild(b); } const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op) row.appendChild(cardEl(t,'used',false)); }); tr.appendChild(row); }
+  else if(openHands()){ const row=document.createElement('div'); row.className='cards'; const dealing2=Date.now()-handDealT0<1600; S.hands[op].forEach((t,i)=>{ if(t!=='?'){ const c=cardEl(t,dealing2?'dealin':''); if(dealing2) c.style.animationDelay=(-(Date.now()-handDealT0)+300+i*90)+'ms'; row.appendChild(c); } }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); tr.appendChild(row); }
   else for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
     const copies=S.copies||3; const left=Math.max(0,copies-known); total+=left;
@@ -1565,8 +1571,9 @@ function render(){
   }
   document.getElementById('trackN').textContent='';
   { const mv=document.getElementById('moves'); mv.innerHTML=''; const H=S.hist||[]; const live=H.length-1;
-    if(H.length<=1){ const e=document.createElement('div'); e.className='empty'; e.textContent='No moves yet'; mv.appendChild(e); }
-    const cell=(i)=>{ const h=H[i]; const d=document.createElement('div'); d.className='ply'+((viewPly==null?live:viewPly)===i?' cur':''); (h.spells||[]).forEach(sp=>{ const c=document.createElement('span'); c.className='sp '+sp.t; c.style.background=SPELLS[sp.t].color; c.textContent=SPELLS[sp.t].name+(sp.sq!=null?' '+sqName(sp.sq):''); d.appendChild(c); }); const t=document.createElement('span'); t.textContent=(h.moves||[]).join(', ')||'—'; d.appendChild(t); d.onclick=()=>{ viewPly=(i===live)?null:i; render(); }; return d; };
+    const FIG={K:'\u265A',Q:'\u265B',R:'\u265C',B:'\u265D',N:'\u265E'};
+    const fig=t=>t.replace(/^([KQRBN])/,(m,l)=>`<span class="fg">${FIG[l]}\uFE0E</span>`);
+    const cell=(i)=>{ const h=H[i]; const d=document.createElement('div'); d.className='ply'+((viewPly==null?live:viewPly)===i?' cur':''); (h.spells||[]).forEach(sp=>{ const c=document.createElement('span'); c.className='sp'; c.style.background=SPELLS[sp.t].color; c.title=SPELLS[sp.t].name+(sp.sq!=null?' '+sqName(sp.sq):''); c.innerHTML=pixSvg(sp.t,SPELLS[sp.t].ink); d.appendChild(c); }); const t=document.createElement('span'); t.className='mv'; t.innerHTML=(h.moves||[]).map(fig).join(' <i>·</i> ')||'—'; d.appendChild(t); d.onclick=()=>{ viewPly=(i===live)?null:i; render(); }; return d; };
     for(let i=1;i<H.length;i++){ const h=H[i];
       if(h.side==='w'){ const n=document.createElement('div'); n.className='num'; n.textContent=h.n+'.'; mv.appendChild(n); }
       else if(!H[i-1]||H[i-1].side!=='w'){ const n=document.createElement('div'); n.className='num'; n.textContent=h.n+'.'; mv.appendChild(n); mv.appendChild(document.createElement('div')); }
