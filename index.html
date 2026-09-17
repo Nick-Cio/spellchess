@@ -310,7 +310,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 @media (prefers-reduced-motion: reduce){ .bgboard,.glow,.arc .card,.hero-title span,.bigbtn.glowbtn{animation:none} }
 
 /* ===== tutorial ===== */
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;align-items:stretch;margin-top:10px}
+.modes{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:row dense;gap:16px 22px;align-items:stretch;margin-top:10px}
 .modes .tsec{display:contents}
 .modes #t-original>*{grid-column:1} .modes #t-draft>*{grid-column:2}
 .modes .eyebrow{margin-top:24px} .modes .tut-p{align-self:start}
