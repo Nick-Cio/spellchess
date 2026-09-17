@@ -1412,7 +1412,7 @@ function render(){
       const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
       for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'+(i===r-1?' kept-pop':'')); if(i===r-1) c.style.animationDelay=since(draftRoundT0.t); kept.appendChild(c); }
       if(r>0) hand.appendChild(kept);
-      if(Date.now()<draftHoldUntil){ const wait=document.createElement('div'); wait.className='online-note'; wait.textContent='Shuffling…'; hand.appendChild(wait); }
+      if(Date.now()<draftHoldUntil){ }
       else {
       const g=document.createElement('div'); g.className='pair big';
       const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
@@ -1448,7 +1448,7 @@ function render(){
       const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
       for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'+(i===r-1?' kept-pop':'')); if(i===r-1) c.style.animationDelay=since(draftRoundT0.t); kept.appendChild(c); }
       if(r>0) hand.appendChild(kept);
-      if(Date.now()<draftHoldUntil){ const wait=document.createElement('div'); wait.className='online-note'; wait.textContent='Shuffling…'; hand.appendChild(wait); }
+      if(Date.now()<draftHoldUntil){ }
       else {
       const g=document.createElement('div'); g.className='pair big';
       const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
@@ -1505,7 +1505,7 @@ function render(){
       const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
       for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'+(i===r-1?' kept-pop':'')); if(i===r-1) c.style.animationDelay=since(draftRoundT0.t); kept.appendChild(c); }
       if(r>0) hand.appendChild(kept);
-      if(Date.now()<draftHoldUntil){ const wait=document.createElement('div'); wait.className='online-note'; wait.textContent='Shuffling…'; hand.appendChild(wait); }
+      if(Date.now()<draftHoldUntil){ }
       else {
       const g=document.createElement('div'); g.className='pair big';
       const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
