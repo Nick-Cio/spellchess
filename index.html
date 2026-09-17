@@ -310,6 +310,21 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 @media (prefers-reduced-motion: reduce){ .bgboard,.glow,.arc .card,.hero-title span,.bigbtn.glowbtn{animation:none} }
 
 /* ===== tutorial ===== */
+.spells{margin-top:40px}
+.spellpick{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:4px 0 18px}
+.spellpick .card{cursor:pointer;transition:transform .2s,box-shadow .2s;width:84px;height:118px;font-size:12px}
+.spellpick .card .art{width:54px;height:54px;margin-top:6px}
+.spellpick .card:hover{transform:translateY(-6px)}
+.spellpick .card.hot{transform:translateY(-8px) scale(1.06);box-shadow:0 0 0 3px #fff,0 0 30px var(--spell)}
+.spellgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:stretch}
+.spellpanel{grid-template-columns:1fr}
+.spellpanel .tdemo .dboard{--sq:64px}
+.spellpanel .panel-lbl{font-family:Sora,sans-serif;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#a19d98;margin-bottom:6px}
+.spellpanel.pop{animation:panelpop .45s cubic-bezier(.2,.9,.3,1.2) both}
+.spellpanel.pop:nth-child(2){animation-delay:.08s}
+@keyframes panelpop{0%{opacity:0;transform:translateY(18px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@media (max-width:900px){ .spellgrid{grid-template-columns:1fr} }
+
 .modes{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:row dense;gap:16px 22px;align-items:stretch;margin-top:10px}
 .modes .tsec{display:contents}
 .modes #t-original>*{grid-column:1} .modes #t-draft>*{grid-column:2}
@@ -406,32 +421,29 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
     <section id="t-basics" class="tsec">
       <div class="eyebrow">Basics</div>
       <h2 class="tut-h">Chess, plus a hand of spells.</h2>
-      <p class="tut-p">Cast a spell, then move. The king is never captured: win by checkmate.</p>
     </section>
     <div class="modes">
     <section id="t-original" class="tsec">
       <div class="eyebrow">Mode one</div>
       <h2 class="tut-h">Original</h2>
-      <p class="tut-p">Spells can take material. One per turn. Hidden hands.</p>
+      <p class="tut-p">Fewer spells, bigger swings. One cast per turn, and a spell can win material outright. Hands are hidden and the deck is revealed slowly, so reading what your opponent might hold is half the game.</p>
       <div class="trow"><div class="ttext"><h3>How it starts</h3><p>15-card deck, 3 of each. You get 3 and may swap 1. Two deck cards are revealed at the start, one more every 4 moves.</p></div><div class="tdemo" data-demo="deal"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#2f9e4e">Jump</span></h3><p>Your piece passes over one piece in its path, or leaps over a neighbour. It may capture where it lands.</p></div><div class="tdemo" data-demo="jump"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#d23a2a">Rage</span></h3><p>A non-pawn piece, king included, moves like a queen this turn.</p></div><div class="tdemo" data-demo="rage"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#f2c531;color:#111">Speed</span></h3><p>The piece you move moves again. Only the first move may capture.</p></div><div class="tdemo" data-demo="speed"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#7a4f2b">Earth</span></h3><p>Petrify any non-king square until your next turn. Empty square: a rock. Piece: frozen, untouchable, no attacks.</p></div><div class="tdemo" data-demo="earth"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414;border-color:#fff">Parasite</span></h3><p>Secretly infect a piece. It awakens next turn; whoever captures it then switches sides. Kings immune.</p></div><div class="tdemo" data-demo="parasite"></div></div>
     </section>
     <section id="t-draft" class="tsec">
       <div class="eyebrow">Mode two</div>
       <h2 class="tut-h">Draft</h2>
-      <p class="tut-p">Spells never take material. Up to two per turn. Nothing hidden.</p>
+      <p class="tut-p">Spells never take material, so they're about moving pieces: tempo, blocking, slipping through, setting up combinations. Up to two casts per turn, six cards drafted from pairs, and nothing hidden once the draft ends.</p>
       <div class="trow"><div class="ttext"><h3>The draft</h3><p>Three pairs, one at a time. Keep one, the other goes to your opponent. Then both hands are face up.</p></div><div class="tdemo" data-demo="draft"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#2f9e4e">Jump</span></h3><p>Same jump, no capture on landing.</p></div><div class="tdemo" data-demo="jump-pac"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#d23a2a">Rage</span></h3><p>Moves like a queen, no capture.</p></div><div class="tdemo" data-demo="rage-pac"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#f2c531;color:#111">Speed</span></h3><p>Two moves, no capture.</p></div><div class="tdemo" data-demo="speed-pac"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#7a4f2b">Earth</span></h3><p>Empty squares or your own pieces only.</p></div><div class="tdemo" data-demo="earth-pac"></div></div>
-      <div class="trow"><div class="ttext"><h3><span class="chip" style="background:#141414;border-color:#fff">Parasite</span></h3><p>Unchanged.</p></div><div class="tdemo" data-demo="parasite"></div></div>
     </section>
     </div>
+    <section class="tsec spells">
+      <div class="eyebrow">The spells</div>
+      <div class="spellpick" id="spellpick"></div>
+      <div class="spellgrid">
+        <div class="trow spellpanel" id="sp-orig"><div class="ttext"><div class="panel-lbl">Original</div><h3></h3><p></p></div><div class="tdemo"></div></div>
+        <div class="trow spellpanel" id="sp-draft"><div class="ttext"><div class="panel-lbl">Draft</div><h3></h3><p></p></div><div class="tdemo"></div></div>
+      </div>
+    </section>
   </div>
 </div>
 </div>
@@ -1564,16 +1576,37 @@ const DEMOS={
     await a.wait(700); for(let i=0;i<3;i++){ await a.flipCard(ob[i],['rage','earth','speed'][i]); await a.flipCard(mb[i],['earth','parasite','rage'][i]); }
     await a.wait(1800); },
 };
+
+const SPELL_TEXT={
+  jump:{o:'Your piece passes over one piece in its path, or leaps over a neighbour. It may capture where it lands.',d:'Same jump, no capture on landing.'},
+  rage:{o:'A non-pawn piece, king included, moves like a queen this turn.',d:'Moves like a queen, no capture.'},
+  speed:{o:'The piece you move moves again. Only the first move may capture.',d:'Two moves, no capture.'},
+  earth:{o:'Petrify any non-king square until your next turn. Empty square: a rock. Piece: frozen, untouchable, no attacks.',d:'Empty squares or your own pieces only.'},
+  parasite:{o:'Secretly infect a piece. It awakens next turn; whoever captures it then switches sides. Kings immune.',d:'Unchanged.'},
+};
+let spellDemos=[], curSpell=null;
+function selectSpell(t){
+  curSpell=t; spellDemos.forEach(d=>d.stop()); spellDemos=[];
+  document.querySelectorAll('#spellpick .card').forEach(el=>el.classList.toggle('hot',el.dataset.type===t));
+  const sp=SPELLS[t]; const chip=`<span class="chip" style="background:${sp.color};color:${sp.ink}${t==='parasite'?';border-color:#fff':''}">${sp.name}</span>`;
+  for(const [id,key,demo] of [['sp-orig','o',t],['sp-draft','d',t==='parasite'?'parasite':t+'-pac']]){
+    const p=document.getElementById(id); p.querySelector('h3').innerHTML=chip; p.querySelector('p').textContent=SPELL_TEXT[t][key];
+    const el=p.querySelector('.tdemo'); el.dataset.demo=demo; el.innerHTML='';
+    p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop');
+    const d=new Demo(el,demo); spellDemos.push(d); d.start();
+  }
+}
+function buildSpellPick(){ const pk=document.getElementById('spellpick'); if(pk.children.length) return; DEMO_SEQ.forEach(t=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color); c.onclick=()=>selectSpell(t); pk.appendChild(c); }); }
 let tutDemos=[];
-function tutStart(){ tutStop(); document.querySelectorAll('#tutScreen .tdemo').forEach(el=>{ const d=new Demo(el,el.dataset.demo); tutDemos.push(d); }); tutDemos.forEach(d=>d.start()); }
-function tutStop(){ tutDemos.forEach(d=>d.stop()); tutDemos=[]; }
+function tutStart(){ tutStop(); buildSpellPick(); document.querySelectorAll('#tutScreen .tdemo:not(.spellpanel .tdemo)').forEach(el=>{ const d=new Demo(el,el.dataset.demo); tutDemos.push(d); }); tutDemos.forEach(d=>d.start()); selectSpell(curSpell||'jump'); }
+function tutStop(){ tutDemos.forEach(d=>d.stop()); tutDemos=[]; spellDemos.forEach(d=>d.stop()); spellDemos=[]; }
 function homeFan(){ const fan=document.getElementById('fan'); if(!fan||fan.children.length) return; const tip=document.getElementById('fanTip');
   DEMO_SEQ.forEach((t,i)=>{ const c=cardEl(t,'',false); c.dataset.type=t; c.style.setProperty('--spell',SPELLS[t].color);
     const k=i-2, off=(window.innerWidth<700?78:150)*k, ang=k*9, dy=Math.abs(k)*Math.abs(k)*14;
     c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; c.style.animationDelay=(-i*0.9)+'s'; c.style.zIndex=i+1;
     c.onmouseenter=()=>{ tip.style.setProperty('--spell',SPELLS[t].color); tip.innerHTML=`<b>${SPELLS[t].name}</b> · ${SPELLS[t].blurb}`; c.style.zIndex=20; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy-26}px) rotate(0deg) scale(1.12)`; };
     c.onmouseleave=()=>{ tip.textContent=''; c.style.zIndex=i+1; c.style.transform=`translateX(calc(-50% + ${off}px)) translateY(${dy}px) rotate(${ang}deg)`; };
-    c.onclick=()=>{ document.getElementById('homeTut').click(); setTimeout(()=>{ const el=document.querySelector(`.tdemo[data-demo="${t}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },50); };
+    c.onclick=()=>{ document.getElementById('homeTut').click(); setTimeout(()=>{ selectSpell(t); const el=document.getElementById('spellpick'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },60); };
     fan.appendChild(c); }); }
 
 function start(data){
