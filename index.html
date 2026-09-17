@@ -171,7 +171,10 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .block h2 .n{color:var(--ink)}
 .cards{display:flex;gap:10px;flex-wrap:wrap;min-height:40px}
 .pair{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px dashed var(--line);border-radius:6px}
-.pair.big{gap:16px;padding:14px 18px;position:relative;margin-top:6px}
+.pair.big{gap:28px;padding:22px 28px;position:relative;margin-top:10px}
+.pair.big .card{width:150px;height:210px;font-size:20px}
+.pair.big .card .art{width:104px;height:104px;margin-top:14px}
+.pair.big .pairvs{font-size:16px}
 .pairlbl{position:absolute;top:-9px;left:12px;background:var(--panel);padding:0 6px;font-family:Sora,sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .card.dealin{animation:dealin .55s cubic-bezier(.2,.8,.2,1) both}
 .card.chosen{animation:chosen .95s cubic-bezier(.2,.8,.2,1) both;z-index:3;box-shadow:0 0 0 3px #fff,0 0 28px var(--spell)}
@@ -620,7 +623,7 @@ function resolveTarget(sq){
   const {type,idx}=S.pending; S.hands[S.turn].splice(idx,1); S.discard.push(type); (S.discardBy||(S.discardBy=[])).push(S.turn); pubPlayed(type); if(!(S.spell&&S.spell.type==='speed')) S.spell={type}; S.casts=(S.casts||0)+1; S.notice=''; S.pending=null; castFx(type); if(type==='earth'){ rockDrop=sq; rockT0=Date.now(); setTimeout(()=>{rockDrop=-1;render();},900); }
   if(type==='jump'){ S.jumper=sq; log(`${NAMES[S.turn]} casts Jump on ${sqName(sq)}.`,true); }
   if(type==='rage'){ S.raged=sq; log(`${NAMES[S.turn]} casts Rage on ${sqName(sq)}.`,true); }
-  if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:3,dormant:true}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
+  if(type==='parasite'){ (S.infected||(S.infected={}))[sq]={by:S.turn,left:1,dormant:true}; log(`${NAMES[S.turn]} casts Parasite.`,true); }
   if(type==='earth'){ const q=S.board[sq]; S.board[sq]={c:'x',t:'rock',under:q||null}; S.rocks.push({sq,owner:S.turn}); log(`${NAMES[S.turn]} casts Earth on ${sqName(sq)}.`,true); }
   flashSq=sq; flashT0=Date.now(); setTimeout(()=>{ if(flashSq===sq){ flashSq=-1; render(); } },650);
   afterCast(); render(); commit();
@@ -925,13 +928,14 @@ function checkAwaken(viewSide){
   const mine=S.awakened.filter(sq=>{ const r=infOf(sq); return r && r.by===viewSide; });
   awakenFx(mine);
 }
-let draftRoundT0={round:-1,t:0}, draftIntroShown=null, draftAnim=null;
+let draftRoundT0={round:-1,t:0}, draftIntroShown=null, draftAnim=null, draftHoldUntil=0;
 function draftIntro(){
   const fx=document.getElementById('draftfx'); if(!fx) return;
   const types=['jump','rage','speed','earth','parasite'];
   fx.innerHTML=types.map((t,i)=>{ const sp=SPELLS[t]; const dx=(i-2)*22, dy=-8, rot=(i-2)*9; return `<div class="dcard" style="background:${sp.color};--dx:${dx}vmin;--dy:${dy}vmin;--rot:${rot}deg;animation-delay:${i*90}ms">${pixSvg(t,sp.ink)}</div>`; }).join('')+'<div class="dtitle">DRAFT</div>';
   fx.hidden=true; void fx.offsetWidth; fx.hidden=false;
-  clearTimeout(draftIntro.t); draftIntro.t=setTimeout(()=>{ fx.hidden=true; },2500);
+  draftHoldUntil=Date.now()+2500; draftRoundT0={round:-1,t:0};
+  clearTimeout(draftIntro.t); draftIntro.t=setTimeout(()=>{ fx.hidden=true; render(); },2500);
 }
 function checkDraftIntro(){
   if(!S||S.phase!=='draft') { draftIntroShown=null; return; }
@@ -1080,10 +1084,12 @@ function render(){
     if(mine){
       S.draftSel=S.draftSel||[-1,-1,-1];
       const round=S.draftSel.findIndex(x=>x<0); const r=round<0?2:round;
-      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Date.now()}; }
+      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Math.max(Date.now(),draftHoldUntil)}; }
       const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
       for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'+(i===r-1?' kept-pop':'')); if(i===r-1) c.style.animationDelay=since(draftRoundT0.t); kept.appendChild(c); }
       if(r>0) hand.appendChild(kept);
+      if(Date.now()<draftHoldUntil){ const wait=document.createElement('div'); wait.className='online-note'; wait.textContent='Shuffling…'; hand.appendChild(wait); }
+      else {
       const g=document.createElement('div'); g.className='pair big';
       const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
       const pr=d.offers[r];
@@ -1099,6 +1105,7 @@ function render(){
       if(anim){ const ring=document.createElement('div'); ring.className='pickring'; ring.style.setProperty('--spell',SPELLS[pr[anim.pick]].color); ring.style.animationDelay=since(anim.t); g.children[anim.pick].appendChild(ring); }
       const vs=document.createElement('span'); vs.className='pairvs'+(anim?' fade':''); vs.textContent='or'; g.insertBefore(vs,g.children[2]);
       hand.appendChild(g);
+      }
     } else {
       const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
@@ -1113,10 +1120,12 @@ function render(){
     if(mine){
       S.draftSel=S.draftSel||[-1,-1,-1];
       const round=S.draftSel.findIndex(x=>x<0); const r=round<0?2:round;
-      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Date.now()}; }
+      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Math.max(Date.now(),draftHoldUntil)}; }
       const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
       for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'+(i===r-1?' kept-pop':'')); if(i===r-1) c.style.animationDelay=since(draftRoundT0.t); kept.appendChild(c); }
       if(r>0) hand.appendChild(kept);
+      if(Date.now()<draftHoldUntil){ const wait=document.createElement('div'); wait.className='online-note'; wait.textContent='Shuffling…'; hand.appendChild(wait); }
+      else {
       const g=document.createElement('div'); g.className='pair big';
       const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
       const pr=d.offers[r];
@@ -1132,6 +1141,7 @@ function render(){
       if(anim){ const ring=document.createElement('div'); ring.className='pickring'; ring.style.setProperty('--spell',SPELLS[pr[anim.pick]].color); ring.style.animationDelay=since(anim.t); g.children[anim.pick].appendChild(ring); }
       const vs=document.createElement('span'); vs.className='pairvs'+(anim?' fade':''); vs.textContent='or'; g.insertBefore(vs,g.children[2]);
       hand.appendChild(g);
+      }
     } else {
       const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
@@ -1160,10 +1170,12 @@ function render(){
     if(mine){
       S.draftSel=S.draftSel||[-1,-1,-1];
       const round=S.draftSel.findIndex(x=>x<0); const r=round<0?2:round;
-      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Date.now()}; }
+      if(draftRoundT0.round!==r){ draftRoundT0={round:r,t:Math.max(Date.now(),draftHoldUntil)}; }
       const kept=document.createElement('div'); kept.className='cards'; kept.style.minHeight='0';
       for(let i=0;i<r;i++){ const c=cardEl(d.offers[i][S.draftSel[i]],'sm'+(i===r-1?' kept-pop':'')); if(i===r-1) c.style.animationDelay=since(draftRoundT0.t); kept.appendChild(c); }
       if(r>0) hand.appendChild(kept);
+      if(Date.now()<draftHoldUntil){ const wait=document.createElement('div'); wait.className='online-note'; wait.textContent='Shuffling…'; hand.appendChild(wait); }
+      else {
       const g=document.createElement('div'); g.className='pair big';
       const lbl=document.createElement('div'); lbl.className='pairlbl'; lbl.textContent=`Pick ${r+1} of 3`; g.appendChild(lbl);
       const pr=d.offers[r];
@@ -1179,6 +1191,7 @@ function render(){
       if(anim){ const ring=document.createElement('div'); ring.className='pickring'; ring.style.setProperty('--spell',SPELLS[pr[anim.pick]].color); ring.style.animationDelay=since(anim.t); g.children[anim.pick].appendChild(ring); }
       const vs=document.createElement('span'); vs.className='pairvs'+(anim?' fade':''); vs.textContent='or'; g.insertBefore(vs,g.children[2]);
       hand.appendChild(g);
+      }
     } else {
       const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });

@@ -19,7 +19,7 @@ Chess, plus a deck of 15 spell cards. Play: https://nick-cio.github.io/spellches
 - **Rage** (red): one of your pieces, not a pawn, moves like a queen this turn. The king is allowed.
 - **Speed** (yellow): the piece you move this turn moves a second time right after. The second move cannot capture. The first move may pass through check as long as the second move gets you out.
 - **Earth** (brown): petrify any square except a king's. An empty square becomes a rock nothing can cross or land on. A piece there is locked in stone: it cannot move, be captured, or give check. Wears off at the start of your next turn.
-- **Parasite** (black): secretly infect any piece except a king, yours or theirs. It lies dormant for one turn, then awakens at the start of your next turn. For the next 3 opponent turns, whoever captures that piece switches to the other color. A king capturing it is immune. You see a countdown above the piece; your opponent only sees that a Parasite was played.
+- **Parasite** (black): secretly infect any piece except a king, yours or theirs. It lies dormant for one turn, then awakens at the start of your next turn. During the opponent's following turn, whoever captures that piece switches to the other color. A king capturing it is immune. You see a countdown above the piece; your opponent only sees that a Parasite was played.
 
 ## Kings and winning
 - The king can never be captured. You win by checkmate, as in chess.
