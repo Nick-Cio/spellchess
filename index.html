@@ -8,22 +8,22 @@
 <style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 :root{
-  --bg:#ecebe8; --panel:#f7f6f4; --ink:#1c1b1a; --muted:#6d6a66; --line:#d3d0cb;
+  --bg:#0f0f0e; --panel:rgba(18,18,17,.66); --ink:#f2f0ec; --muted:#a19d98; --line:rgba(255,255,255,.12);
   --lt:#d9d9d9; --dk:#7f7b78; --coord:#8a8784;
   --sel:rgba(255,214,0,.55); --last:rgba(120,180,255,.35);
   --jump:#2f9e4e; --rage:#d23a2a; --speed:#f2c531; --earth:#7a4f2b;
-  --sq:calc(min(100vh - 186px, 56vw) / 8);
+  --sq:calc(min(100vh - 150px, 58vw) / 8);
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --bg:#1b1a19; --panel:#242321; --ink:#ecebe8; --muted:#a19d98; --line:#3a3835; }
-}
-:root[data-theme="dark"]{ --bg:#1b1a19; --panel:#242321; --ink:#ecebe8; --muted:#a19d98; --line:#3a3835; }
 
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;padding:12px 16px 12px;overflow:hidden;display:flex;flex-direction:column}
+body{margin:0;background:#0f0f0e;color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;padding:10px 16px 10px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.gamebg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.gamebg .bgboard,.gamebg .glow{position:absolute}
+.top,.wrap{position:relative;z-index:1}
 h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-spacing:-.01em}
-.top{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+.top{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+h1{text-shadow:0 3px 0 #000}
 .top .sub{color:var(--muted)}
 .wrap{display:flex;gap:22px;align-items:flex-start;flex:1;min-height:0}
 .boardcol{display:flex;flex-direction:column;gap:6px;flex:none}
@@ -166,7 +166,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .online-opts input[type=number]{width:52px}
 .gear{margin-left:auto;font-size:20px;line-height:1;padding:4px 8px;border-color:transparent;background:transparent}
 .gear:hover{border-color:var(--line)}
-.block{background:var(--panel);border:1px solid var(--line);padding:10px 12px}
+.block{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;backdrop-filter:blur(6px)}
 .block h2{font-family:Sora,sans-serif;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;justify-content:space-between}
 .block h2 .n{color:var(--ink)}
 .cards{display:flex;gap:10px;flex-wrap:wrap;min-height:40px}
@@ -206,7 +206,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .card.sm .art{width:36px;height:36px;margin-top:3px}
 .card.back{background:repeating-linear-gradient(45deg,#2a2826 0 6px,#3a3734 6px 12px);color:#8a8784;justify-content:center;align-items:center;font-size:26px}
 .card.playable{cursor:pointer;transition:transform .12s}
-.card.playable:hover{transform:translateY(-4px)}
+.card.playable:hover{transform:translateY(-6px);box-shadow:0 0 0 3px #fff,0 0 28px var(--spell),0 14px 30px rgba(0,0,0,.5)}
 .card.armed{outline:3px solid #fff;outline-offset:-6px;transform:translateY(-6px)}
 .card.dim{opacity:.45}
 .card.used{opacity:.32;filter:grayscale(1)}
@@ -273,8 +273,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .undobar{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--speed);border-radius:6px;background:rgba(242,197,49,.12);font-family:Sora,sans-serif;font-weight:600;font-size:13px;animation:undoblink 1.2s ease-in-out infinite}
 .undobar button{padding:3px 10px;font-size:12px}
 @keyframes undoblink{0%,100%{box-shadow:0 0 0 0 rgba(242,197,49,.5)}50%{box-shadow:0 0 0 6px rgba(242,197,49,0)}}
-.pill.home{margin-left:auto}
-.pill.home+.pill{margin-left:0}
+.pill{margin-left:auto}
 @media (max-width:700px){ .fan{height:190px} .fan .card{width:96px;height:134px;font-size:12px} .fan .card .art{width:60px;height:60px} .demo .board{--sq:44px} }
 
 /* ===== hero ===== */
@@ -508,7 +507,8 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   </div>
 </div>
 </div>
-<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button><button id="gear" class="gear" title="Settings" aria-label="Settings">&#9881;</button></div>
+<div class="gamebg"><div class="bgboard"></div><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div></div>
+<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="onlineBtn" class="pill">Play online</button></div>
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
@@ -543,7 +543,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
 <div id="tip" hidden></div>
 <div id="promo" class="promo" hidden></div>
-<div id="endfx" hidden><div class="endbox"><div class="endtitle" id="endTitle"></div><div class="endsub" id="endSub"></div><button id="endClose">Close</button></div></div>
+<div id="endfx" hidden><div class="endbox"><div class="endtitle" id="endTitle"></div><div class="endsub" id="endSub"></div><button id="endClose">Close</button> <button id="endHome" class="primary">Back to home</button></div></div>
 <div id="draftfx" hidden></div>
 <div id="castfx" hidden><div class="fxwash"></div><div class="fxicon"></div><div class="fxname"></div></div>
 <script>
@@ -1270,7 +1270,7 @@ function preview(sq){
 function cardEl(type,cls,tip){
   const d=document.createElement('div'); const sp=SPELLS[type];
   d.className='card '+(cls||''); d.dataset.type=type; d.style.background=sp.color; d.style.color=sp.ink; d.innerHTML=`<div class="art">${pixSvg(type,sp.ink)}</div><span>${sp.name}</span>`;
-  if(tip!==false){ d.onmouseenter=()=>showTip(d,(S&&pacRules()&&sp.tipPac)?sp.tipPac:sp.tip); d.onmouseleave=hideTip; }
+  d.style.setProperty('--spell',sp.color);
   return d;
 }
 let endShownFor=null;
@@ -1325,9 +1325,11 @@ function showEnd(){
   sub.textContent=S.over.winner?`${NAMES[S.over.winner]} wins`:'Draw';
   fx.hidden=false;
   document.getElementById('endClose').onclick=()=>{ fx.hidden=true; endShownFor='dismissed:'+key; };
+  document.getElementById('endHome').onclick=()=>{ fx.hidden=true; endShownFor='dismissed:'+key; if(typeof leaveOnline==='function'){ leaveOnline(true); } try{ localStorage.removeItem('spellchess_game'); }catch(e){} newGame(); if(typeof renderOnline==='function') renderOnline(); if(typeof showScreen==='function') showScreen('home'); };
 }
 function render(){
   if(!S.pending) hoverSq=-1;
+  checkDraftIntro();
   const view=(inMulligan()&&!online)?(mullSeat()||S.turn):((inDraft()&&!online)?(draftSeat()||S.turn):(mySeat()||S.turn));
   const flip=online?(online.seat==='b'):(document.getElementById('sFlip').checked && S.turn==='b');
   const board=document.getElementById('board'); board.innerHTML='';
@@ -1367,12 +1369,12 @@ function render(){
   // status
   const st=document.getElementById('status'), hint=document.getElementById('hint');
   if(S.phase==='play' && !S.snapCur && !S.spell && !S.lastMove && !S.over){ try{ S.snapCur=turnSnap(); }catch(e){} }
-  showEnd(); renderClocks(); renderBars(); checkAwaken(view); checkDraftIntro();
+  showEnd(); renderClocks(); renderBars(); checkAwaken(view);
   document.getElementById('modeTag').hidden=!pacRules(); document.getElementById('modeTag').textContent=S.mode==='draft'?'Draft':'Original';
   document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
   if(S.over){ st.innerHTML=S.over.winner?`<span class="who ${S.over.winner}"></span>${NAMES[S.over.winner]} wins by ${S.over.reason}`:'Draw by stalemate'; hint.textContent='New game to play again.'; hint.className='hint'; }
   else {
-    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?(ds?(S.draft[ds].done?'Waiting for opponent':''):''):`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}`; }
+    if(inDraft()){ const ds=draftSeat(); st.innerHTML=online?(ds?(S.draft[ds].done?'Waiting…':''):''):`<span class="who ${ds||'w'}"></span>${NAMES[ds||'w']}`; }
     else if(inDraft()){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
@@ -1401,14 +1403,14 @@ function render(){
       hand.appendChild(g);
       }
     } else {
-      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
+      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Waiting…':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
     }
   }
-  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting for opponent':'Choose your hand'):'Players are choosing hands'):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
+  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting…':'Choose your hand'):''):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
     else st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
-    if(inDraft()){ const ds=draftSeat(); h=(ds&&!S.draft[ds].done)?'':'Waiting for the other player to draft.'; }
+    if(inDraft()){ const ds=draftSeat(); h=''; }
     else if(inDraft()){
     const ds=draftSeat(); const d=S.draft[me]; const mine=ds===me && d && !d.done && d.offers;
     if(mine){
@@ -1437,16 +1439,16 @@ function render(){
       hand.appendChild(g);
       }
     } else {
-      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
+      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Waiting…':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
     }
   }
-  else if(inMulligan()){ const ms=mullSeat(); h=(ms&&!S.mull[ms].done)?'Swap one spell for a random one from the deck, or keep your hand.':'Waiting for the other player to choose.'; }
+  else if(inMulligan()){ const ms=mullSeat(); h=(ms&&!S.mull[ms].done)?'Swap one card, or keep your hand.':''; }
     else if(S.pending){ h={jump:'Jump: pick one of your pieces. This turn it may pass over one piece in its path, or leap over an adjacent piece.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
     else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
     else if(S.spell) h=`${SPELLS[S.spell.type].name} is active. `+(pacRules()&&(S.casts||0)<2?'Cast another or move.':'Now move.');
-    else if(online && online.seats && !(online.seats.w&&online.seats.b)) h='Waiting for an opponent to join with code '+online.code+'.';
+    else if(online && online.seats && !(online.seats.w&&online.seats.b)) h='Waiting for an opponent · code '+online.code;
     else h='';
     hint.textContent=h; hint.className='hint'+(warn?' warn':'');
   }
@@ -1495,7 +1497,7 @@ function render(){
       hand.appendChild(g);
       }
     } else {
-      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Draft locked in. Waiting for the other player.':''; hand.appendChild(n);
+      const n=document.createElement('div'); n.className='online-note'; n.textContent=(d&&d.done)?'Waiting…':''; hand.appendChild(n);
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
     }
   }
@@ -1507,7 +1509,7 @@ function render(){
       const bSwap=document.createElement('button'); bSwap.className='primary'; bSwap.textContent=S.mullSel>=0?'Swap selected':'Select a card to swap'; bSwap.disabled=S.mullSel<0; bSwap.onclick=()=>doMulligan(me,S.mullSel);
       const bKeep=document.createElement('button'); bKeep.textContent='Keep hand'; bKeep.onclick=()=>doMulligan(me,-1);
       row.appendChild(bSwap); row.appendChild(bKeep);
-    } else { const n=document.createElement('div'); n.className='online-note'; n.textContent=(S.mull[me]&&S.mull[me].done)?'Hand locked in.':''; row.appendChild(n); }
+    } else { const n=document.createElement('div'); n.className='online-note'; n.textContent=''; row.appendChild(n); }
     hand.appendChild(row);
   }
   else { const pubLeft=Object.assign({},(S.pub&&S.pub[me])?S.pub[me].reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{}):{});
@@ -1548,10 +1550,10 @@ const tipEl=document.getElementById('tip');
 function showTip(el,text){ const r=el.getBoundingClientRect(); tipEl.textContent=text; tipEl.style.left=(r.left+r.width/2)+'px'; tipEl.style.top=r.top+'px'; tipEl.hidden=false; }
 function hideTip(){ tipEl.hidden=true; }
 document.getElementById('board').onmouseleave=()=>{ if(hoverSq>=0){ hoverSq=-1; render(); } };
-document.getElementById('gear').onclick=()=>{ const b=document.getElementById('settingsBlock'); b.hidden=!b.hidden; document.getElementById('onlineBlock').hidden=true; };
+
 document.getElementById('undo').onclick=undo;
 document.getElementById('resign').onclick=resign;
-document.getElementById('onlineBtn').onclick=()=>{ const b=document.getElementById('onlineBlock'); b.hidden=!b.hidden; document.getElementById('settingsBlock').hidden=true; };
+document.getElementById('onlineBtn').onclick=()=>{ const b=document.getElementById('onlineBlock'); b.hidden=!b.hidden; };
 renderOnline();
 document.getElementById('sFlip').onchange=render;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); });
@@ -1565,7 +1567,7 @@ document.getElementById('homePlay').onclick=()=>showScreen('playScreen');
 document.getElementById('homeTut').onclick=()=>{ showScreen('tutScreen'); };
 document.getElementById('playBack').onclick=()=>showScreen('home');
 document.getElementById('tutBack').onclick=()=>showScreen('home');
-document.getElementById('homeBtn').onclick=()=>{ showScreen('home'); };
+
 function applyPlayOpts(mode,clock,min,inc){ const sv=id=>document.getElementById(id); sv('sMode').value=mode; sv('sClock').checked=!!clock; if(min) sv('sMin').value=min; if(inc!=null) sv('sInc').value=inc; }
 
 (function(){ const sv=id=>document.getElementById(id);
@@ -1574,8 +1576,8 @@ function applyPlayOpts(mode,clock,min,inc){ const sv=id=>document.getElementById
   wire('segClock',b=>{ sv('pClock').value=b.dataset.v; sv('segTc').classList.toggle('off',b.dataset.v==='off'); sv('tcLbl').style.opacity=b.dataset.v==='off'?.35:1; });
   wire('segTc',b=>{ sv('pMin').value=b.dataset.m; sv('pInc').value=b.dataset.i; });
 })();
-document.getElementById('pCreate').onclick=async()=>{ const sv=id=>document.getElementById(id); applyPlayOpts(sv('pMode').value,sv('pClock').value==='on',sv('pMin').value,sv('pInc').value); sv('pCreateNote').textContent='Creating…'; await createOnline(); if(online){ hideScreens(); } else sv('pCreateNote').textContent=(document.getElementById('onlineNote')||{}).textContent||'Could not create.'; };
-document.getElementById('pJoin').onclick=async()=>{ const sv=id=>document.getElementById(id); sv('pJoinNote').textContent='Joining…'; await joinOnline(sv('pCode').value); if(online){ hideScreens(); } else sv('pJoinNote').textContent=(document.getElementById('onlineNote')||{}).textContent||'Could not join.'; };
+document.getElementById('pCreate').onclick=async()=>{ const sv=id=>document.getElementById(id); applyPlayOpts(sv('pMode').value,sv('pClock').value==='on',sv('pMin').value,sv('pInc').value); await createOnline(); if(online){ hideScreens(); } else sv('pCreateNote').textContent=(document.getElementById('onlineNote')||{}).textContent||'Could not create.'; };
+document.getElementById('pJoin').onclick=async()=>{ const sv=id=>document.getElementById(id); await joinOnline(sv('pCode').value); if(online){ hideScreens(); } else sv('pJoinNote').textContent=(document.getElementById('onlineNote')||{}).textContent||'Could not join.'; };
 document.getElementById('pCode').onkeydown=e=>{ if(e.key==='Enter') document.getElementById('pJoin').click(); };
 
 /* lobby: open challenges */
@@ -1590,7 +1592,7 @@ async function lobbyStart(){
     snap.forEach(ch=>{ const v=ch.val(); if(v && now-(v.created||0)<2*3600*1000 && v.host!==uid) rows.push(v); });
     rows.sort((a,b)=>(b.created||0)-(a.created||0));
     box.innerHTML='';
-    if(!rows.length){ box.innerHTML='<div class="empty">No open challenges right now. Create one, or enter a code.</div>'; return; }
+    if(!rows.length){ box.innerHTML='<div class="empty">No open challenges.</div>'; return; }
     rows.forEach(v=>{ const r=document.createElement('div'); r.className='row'; r.innerHTML=`<div class="code">${v.code}</div><div class="meta">${v.mode==='draft'?'draft':'original'}${v.clock?` · ${v.min}+${v.inc}`:' · no clock'}<br>${Math.max(1,Math.round((now-(v.created||0))/60000))} min ago</div>`; r.onclick=()=>{ document.getElementById('pCode').value=v.code; document.getElementById('pJoin').click(); }; box.appendChild(r); });
   }, e=>{ box.innerHTML='<div class="empty">Could not load challenges.</div>'; });
   lobbyUnsub=()=>ref.off('value',cb);
