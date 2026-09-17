@@ -320,9 +320,14 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
 /* ===== play screen ===== */
 .screen.playscreen{justify-content:center;overflow-y:auto}
-.play-inner{position:relative;z-index:2;width:min(96vw,980px);display:flex;flex-direction:column;gap:14px;padding-bottom:40px;align-items:center}
-.play-inner .tut-top{align-self:stretch}
-.play-inner .tut-h{text-align:center}
+.play-inner{position:relative;z-index:2;width:min(96vw,900px);display:flex;flex-direction:column;gap:22px;padding-bottom:20px;align-items:center}
+.play-inner .tut-top{position:fixed;top:22px;left:28px;z-index:3;margin:0}
+.play-inner .tut-h{text-align:center;margin-bottom:4px}
+.playscreen .play-grid{grid-template-columns:1fr 1fr;align-items:stretch;gap:22px}
+.playscreen .panel{padding:22px 24px;gap:14px}
+.playscreen .panel .lobby{flex:1;max-height:none;min-height:120px}
+.playscreen .panel .bigbtn{margin-top:6px}
+@media (max-width:760px){ .playscreen .play-grid{grid-template-columns:1fr} }
 .playscreen .bgboard,.playscreen .glow{position:fixed}
 .playscreen .play-grid{width:100%}
 .playscreen .panel{background:rgba(15,15,14,.6);border:1px solid rgba(255,255,255,.1);border-radius:10px;backdrop-filter:blur(6px);color:#e6e2dc}
