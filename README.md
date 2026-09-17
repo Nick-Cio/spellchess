@@ -45,5 +45,5 @@ Same game, but spells can never take material, and you may cast up to 2 spells p
 ## Draft mode (experimental)
 Pacifist rules, but hands are built by a draft instead of being dealt.
 - Each player privately gets 3 pairs of different cards and keeps one from each pair. The other card of each pair goes to the opponent face up.
-- So everyone ends with 6 cards: 3 they chose (private) and 3 they were given (public to both). The opponent's public cards are shown; their private ones show as card backs.
+- Everyone ends with 6 cards. Once the draft is over there is no hidden information: both full hands are face up.
 - No swap, no deck reveals.

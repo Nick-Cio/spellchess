@@ -652,7 +652,7 @@ function initFirebase(){
 }
 function mySeat(){ return online?online.seat:S.turn; }
 function pacRules(){ return S.mode==='pacifist'||S.mode==='draft'; }
-function openHands(){ return S.mode==='pacifist'; }
+function openHands(){ return S.mode==='pacifist' || (S.mode==='draft' && S.phase!=='draft'); }
 function inMulligan(){ return S.phase==='mulligan'; }
 function inDraft(){ return S.phase==='draft'; }
 function draftSeat(){ if(!inDraft()) return null; if(online) return online.seat; return !S.draft.w.done?'w':(!S.draft.b.done?'b':null); }
@@ -681,7 +681,7 @@ function draftStep(){
     const db=firebase.database(); const stateRef=db.ref('games/'+online.code+'/state'); const handRef=db.ref('games/'+online.code+'/hands/'+me);
     online.draftBusy=true;
     handRef.set(hand).then(()=>stateRef.transaction(st=>{ if(!st) return; if(st.draft[me].assembled) return; st.draft[me].assembled=true; st.handCount=st.handCount||{w:0,b:0}; st.handCount[me]=hand.length;
-        if(st.draft.w.assembled&&st.draft.b.assembled&&st.phase==='draft'){ st.phase='play'; if(st.clock&&st.clock.on){ st.clock.running=st.turn||'w'; st.clock.lastTick=clockNow(); } }
+        st.hands=st.hands||{}; st.hands[me]=hand.slice(); if(st.draft.w.assembled&&st.draft.b.assembled&&st.phase==='draft'){ st.phase='play'; if(st.clock&&st.clock.on){ st.clock.running=st.turn||'w'; st.clock.lastTick=clockNow(); } }
         st.ver=(st.ver||0)+1; st.lastBy='draft'; return st; }))
       .catch(e=>onlineNote('Draft failed: '+fbErr(e),true)).finally(()=>{ online.draftBusy=false; });
   }
@@ -760,7 +760,7 @@ function fbErr(e){ const m=(e&&e.message)||String(e); if(/permission/i.test(m)) 
 function pubState(){
   const pub=JSON.parse(JSON.stringify(S)); pub.pending=null; pub.sel=-1;
   if(pub.draft){ for(const s of ['w','b']) if(pub.draft[s]){ pub.draft[s]=Object.assign({},pub.draft[s]); delete pub.draft[s].offers; delete pub.draft[s].picks; } }
-  pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; if(S.mode==='pacifist'){ pub.hands={w:S.hands.w.slice(),b:S.hands.b.slice()}; } else delete pub.hands;
+  pub.handCount={w:S.hands.w.length,b:S.hands.b.length}; if(openHands()){ pub.hands={w:S.hands.w.slice(),b:S.hands.b.slice()}; } else delete pub.hands;
   pub.board=S.board.map(q=>q?(q.c==='x'?(q.under?q.under.c.toUpperCase()+q.under.t:'xx'):q.c+q.t):'..').join('');
   return pub;
 }
@@ -829,7 +829,8 @@ function attachOnline(code,ver){
 function rebuild(){
   if(!online||!online.state) return;
   const st=online.state; const mine=online.seat;
-  if(mine && online.hand===null && st.mode!=='pacifist') return; // wait for our hand
+  const openSt=st.mode==='pacifist' || (st.mode==='draft' && st.phase!=='draft');
+  if(mine && online.hand===null && !openSt) return; // wait for our hand
   const fresh=(st.ver||0)>(online.ver||0) || st.lastBy!==uid || !online.loaded;
   if(!fresh){ return; }
   const prevDisc=(S&&online.loaded)?S.discard.length:Infinity;
@@ -844,7 +845,7 @@ function rebuild(){
   ns.infected=ns.infected||{}; ns.over=ns.over||null; ns.lastMove=ns.lastMove||null; ns.spell=ns.spell||null; ns.notice=ns.notice||'';
   if(typeof ns.phased!=='number') ns.phased=-1; if(typeof ns.jumper!=='number') ns.jumper=-1; if(!Array.isArray(ns.awakened)) ns.awakened=[]; if(typeof ns.raged!=='number') ns.raged=-1; if(typeof ns.speedSq!=='number') ns.speedSq=-1; if(typeof ns.ep!=='number') ns.ep=-1;
   const hc=ns.handCount||{w:0,b:0}; delete ns.handCount;
-  if(st.mode==='pacifist' && st.hands){ ns.hands={w:Array.isArray(st.hands.w)?st.hands.w.slice():[],b:Array.isArray(st.hands.b)?st.hands.b.slice():[]}; }
+  if(openSt && st.hands){ ns.hands={w:Array.isArray(st.hands.w)?st.hands.w.slice():[],b:Array.isArray(st.hands.b)?st.hands.b.slice():[]}; }
   else { ns.hands={w:Array(hc.w).fill('?'),b:Array(hc.b).fill('?')}; if(mine) ns.hands[mine]=(online.hand||[]).slice(); }
   if(ns.phase==='draft' && mine && ns.draft[mine] && !ns.draft[mine].done){ const off=(online.hand||[]); ns.draft[mine].offers=[[off[0],off[1]],[off[2],off[3]],[off[4],off[5]]].filter(pr=>pr[0]&&pr[1]); ns.hands[mine]=[]; if(S&&S.draftSel) ns.draftSel=S.draftSel; }
   S=ns; online.ver=st.ver||0;
@@ -1209,7 +1210,7 @@ function render(){
     hand.appendChild(row);
   }
   else { const pubLeft=Object.assign({},(S.pub&&S.pub[me])?S.pub[me].reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{}):{});
-    S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } if(S.mode==='draft'&&pubLeft[t]>0){ pubLeft[t]--; const tag=document.createElement('span'); tag.className='pubtag'; tag.textContent='public'; c.appendChild(tag); } hand.appendChild(c); }); }
+    S.hands[me].forEach((t,i)=>{ const armed=S.pending&&S.pending.idx===i; const c=cardEl(t, canCast?'playable':(armed?'armed':'dim')); if(canCast) c.onclick=()=>cast(i); if(armed){ c.style.cursor='pointer'; c.onclick=cancelSpell; } if(false&&pubLeft[t]>0){ pubLeft[t]--; const tag=document.createElement('span'); tag.className='pubtag'; tag.textContent='public'; c.appendChild(tag); } hand.appendChild(c); }); }
   if(pacRules() && !spectator && !inMulligan() && !inDraft()){ const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===me) hand.appendChild(cardEl(t,'used',false)); }); }
   const rev=document.getElementById('revealed'); rev.innerHTML=''; S.revealed.forEach(t=>rev.appendChild(cardEl(t,'sm')));
   document.getElementById('revN').textContent=S.revealed.length;
@@ -1226,8 +1227,8 @@ function render(){
   const tr=document.getElementById('track'); tr.innerHTML='';
   document.getElementById('trackTitle').textContent=pacRules()?((online&&!spectator)?"Opponent's hand":`${NAMES[op]}'s hand`):((online&&!spectator)?'Opponent could hold':`${NAMES[op]} could hold`);
   let total=0;
-  if(S.mode==='draft'){ const row=document.createElement('div'); row.className='cards'; const pubOp=(S.pub&&S.pub[op])||[]; pubOp.forEach(t=>row.appendChild(cardEl(t,''))); const hidden=Math.max(0,S.hands[op].length-pubOp.length); for(let i=0;i<hidden;i++){ const b=document.createElement('div'); b.className='card back'; b.textContent='?'; row.appendChild(b); } const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op) row.appendChild(cardEl(t,'used',false)); }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
-  else if(S.mode==='pacifist'){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  if(S.mode==='draft' && S.phase==='draft'){ const row=document.createElement('div'); row.className='cards'; const pubOp=(S.pub&&S.pub[op])||[]; pubOp.forEach(t=>row.appendChild(cardEl(t,''))); const hidden=Math.max(0,S.hands[op].length-pubOp.length); for(let i=0;i<hidden;i++){ const b=document.createElement('div'); b.className='card back'; b.textContent='?'; row.appendChild(b); } const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op) row.appendChild(cardEl(t,'used',false)); }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
+  else if(openHands()){ const row=document.createElement('div'); row.className='cards'; S.hands[op].forEach(t=>{ if(t!=='?') row.appendChild(cardEl(t,'')); }); const by=S.discardBy||[]; S.discard.forEach((t,i)=>{ if(by[i]===op){ const c=cardEl(t,'used',false); row.appendChild(c); } }); if(!row.children.length){ const e=document.createElement('div'); e.className='online-note'; e.textContent='none'; row.appendChild(e); } tr.appendChild(row); }
   else for(const t of Object.keys(SPELLS)){
     const known=[...S.hands[me],...S.revealed,...S.discard].filter(x=>x===t).length;
     const copies=S.copies||3; const left=Math.max(0,copies-known); total+=left;
