@@ -24,6 +24,8 @@ body{margin:0;background:#151413;color:var(--ink);font-family:"IBM Plex Sans",sy
 h1{font-family:Sora,sans-serif;font-weight:700;font-size:22px;margin:0;letter-spacing:-.01em}
 .top{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:8px}
 h1{text-shadow:0 3px 0 #000}
+.hero-title.mini{font-size:26px;letter-spacing:.06em;line-height:1;animation:none;text-shadow:0 3px 0 #000}
+.hero-title.mini span{animation:shimmer 9s linear infinite}
 .top .sub{color:var(--muted)}
 .wrap{display:flex;gap:22px;align-items:flex-start;flex:1;min-height:0}
 .boardcol{display:flex;flex-direction:column;gap:6px;flex:none}
@@ -192,7 +194,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 @keyframes dealin{0%{transform:translateY(40px) rotateY(90deg);opacity:0}60%{opacity:1}100%{transform:translateY(0) rotateY(0);opacity:1}}
 #draftfx{position:fixed;inset:0;z-index:55;pointer-events:none;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 50%,rgba(47,158,78,.45),rgba(0,0,0,.85) 70%);animation:dfxbg 2.4s ease-out forwards}
 #draftfx .dtitle{position:absolute;font-family:Sora,sans-serif;font-weight:700;font-size:clamp(48px,12vmin,120px);letter-spacing:.3em;color:#fff;text-shadow:0 0 30px rgba(47,158,78,.9),0 4px 0 #000;animation:dtitle 2.4s ease-out forwards}
-#draftfx .dcard{position:absolute;width:min(18vmin,120px);height:min(25vmin,168px);border:3px solid #000;border-radius:8px;display:flex;align-items:center;justify-content:center;animation:dcard 2.4s cubic-bezier(.2,.8,.2,1) forwards;box-shadow:0 14px 40px rgba(0,0,0,.6)}
+#draftfx .dcard{position:absolute;width:min(18vmin,120px);height:min(25vmin,168px);border:3px solid #000;border-radius:8px;display:flex;align-items:center;justify-content:center;animation:dcard 2.4s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 14px 40px rgba(0,0,0,.6)}
 #draftfx .dcard svg{width:70%;height:70%;shape-rendering:geometricPrecision}
 @keyframes dfxbg{0%{opacity:0}12%{opacity:1}80%{opacity:1}100%{opacity:0}}
 @keyframes dtitle{0%{transform:scale(.5) translateY(40px);opacity:0}20%{transform:scale(1.05) translateY(0);opacity:1}75%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}
@@ -508,7 +510,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   </div>
 </div>
 </div>
-<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button></div>
+<div class="top"><h1 class="hero-title mini">SPELL<span>CHESS</span></h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button></div>
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
@@ -1407,7 +1409,7 @@ function render(){
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
     }
   }
-  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting…':'Choose your hand'):''):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
+  else if(inMulligan()){ const ms=mullSeat(); st.innerHTML=online?(ms?(S.mull[ms].done?'Waiting…':''):''):`<span class="who ${ms||'w'}"></span>${NAMES[ms||'w']}: choose your hand`; }
     else st.innerHTML=`<span class="who ${S.turn}"></span>${online?(online.seat?(online.seat===S.turn?'Your move':'Opponent\'s move'):NAMES[S.turn]+' to move'):NAMES[S.turn]+' to move'}${inCheck(S)?' &middot; in check':''}`;
     let h='', warn=false;
     if(inDraft()){ const ds=draftSeat(); h=''; }
@@ -1443,7 +1445,7 @@ function render(){
       if(d&&d.done&&Array.isArray(S.hands[me])) S.hands[me].forEach(t=>{ if(t!=='?') hand.appendChild(cardEl(t,'dim')); });
     }
   }
-  else if(inMulligan()){ const ms=mullSeat(); h=(ms&&!S.mull[ms].done)?'Swap one card, or keep your hand.':''; }
+  else if(inMulligan()){ const ms=mullSeat(); h=''; }
     else if(S.pending){ h={jump:'Jump: pick one of your pieces. This turn it may pass over one piece in its path, or leap over an adjacent piece.',rage:'Rage: pick one of your pieces (not a pawn; king allowed). It moves as a queen this turn.',earth:'Earth: pick any square except a king. A piece there is locked in stone: it cannot move, be captured, or attack.',parasite:'Parasite: pick a piece to infect. Only you will see the mark.'}[S.pending.type]; }
     else if(S.speedSq>=0) h='Speed: move the same piece again (no capture).';
     else if(S.notice){ h=S.notice; warn=true; }
