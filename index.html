@@ -1366,6 +1366,7 @@ function render(){
   }
   // status
   const st=document.getElementById('status'), hint=document.getElementById('hint');
+  if(S.phase==='play' && !S.snapCur && !S.spell && !S.lastMove && !S.over){ try{ S.snapCur=turnSnap(); }catch(e){} }
   showEnd(); renderClocks(); renderBars(); checkAwaken(view); checkDraftIntro();
   document.getElementById('modeTag').hidden=!pacRules(); document.getElementById('modeTag').textContent=S.mode==='draft'?'Draft':'Original';
   document.getElementById('revBlock').hidden=pacRules(); document.getElementById('discBlock').hidden=pacRules();
