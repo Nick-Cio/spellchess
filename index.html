@@ -8,7 +8,7 @@
 <style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 :root{
-  --bg:#0f0f0e; --panel:rgba(18,18,17,.66); --ink:#f2f0ec; --muted:#a19d98; --line:rgba(255,255,255,.12);
+  --bg:#151413; --panel:#1d1c1a; --ink:#f2f0ec; --muted:#a19d98; --line:rgba(255,255,255,.1);
   --lt:#d9d9d9; --dk:#7f7b78; --coord:#8a8784;
   --sel:rgba(255,214,0,.55); --last:rgba(120,180,255,.35);
   --jump:#2f9e4e; --rage:#d23a2a; --speed:#f2c531; --earth:#7a4f2b;
@@ -17,7 +17,7 @@
 
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:#0f0f0e;color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;padding:10px 16px 10px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+body{margin:0;background:#151413;color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;padding:10px 16px 10px;overflow:hidden;display:flex;flex-direction:column;position:relative}
 .gamebg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .gamebg .bgboard,.gamebg .glow{position:absolute}
 .top,.wrap{position:relative;z-index:1}
@@ -273,7 +273,8 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .undobar{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--speed);border-radius:6px;background:rgba(242,197,49,.12);font-family:Sora,sans-serif;font-weight:600;font-size:13px;animation:undoblink 1.2s ease-in-out infinite}
 .undobar button{padding:3px 10px;font-size:12px}
 @keyframes undoblink{0%,100%{box-shadow:0 0 0 0 rgba(242,197,49,.5)}50%{box-shadow:0 0 0 6px rgba(242,197,49,0)}}
-.pill{margin-left:auto}
+.pill.home{margin-left:auto}
+.pill.home+.pill{margin-left:0}
 @media (max-width:700px){ .fan{height:190px} .fan .card{width:96px;height:134px;font-size:12px} .fan .card .art{width:60px;height:60px} .demo .board{--sq:44px} }
 
 /* ===== hero ===== */
@@ -507,8 +508,7 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   </div>
 </div>
 </div>
-<div class="gamebg"><div class="bgboard"></div><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div></div>
-<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="onlineBtn" class="pill">Play online</button></div>
+<div class="top"><h1>Spellchess</h1><span id="modeTag" class="modetag" hidden>Pacifist</span><div class="status" id="status"></div><div class="hint" id="hint"></div><div id="undoBar" class="undobar" hidden></div><button id="homeBtn" class="pill home">Home</button><button id="onlineBtn" class="pill">Play online</button></div>
 <div class="block" id="onlineBlock" hidden><h2>Online game</h2><div id="onlineBody"></div></div>
 <div class="wrap">
   <div class="boardcol">
@@ -1554,6 +1554,7 @@ document.getElementById('board').onmouseleave=()=>{ if(hoverSq>=0){ hoverSq=-1; 
 document.getElementById('undo').onclick=undo;
 document.getElementById('resign').onclick=resign;
 document.getElementById('onlineBtn').onclick=()=>{ const b=document.getElementById('onlineBlock'); b.hidden=!b.hidden; };
+document.getElementById('homeBtn').onclick=()=>{ showScreen('home'); };
 renderOnline();
 document.getElementById('sFlip').onchange=render;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') cancelSpell(); });
